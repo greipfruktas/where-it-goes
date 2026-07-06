@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#f7f5ef" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Where It Goes" />
+    <title>Where It Goes</title>
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="icons/icon-180.png" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">WHERE IT GOES</p>
+          <h1 id="greeting">Your month</h1>
+        </div>
+        <button class="icon-button" id="exportButton" aria-label="Export expenses" title="Export expenses">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0-12 4 4m-4-4L8 7M5 13v6h14v-6" /></svg>
+        </button>
+      </header>
+
+      <main>
+        <section id="overviewView" class="view active" aria-labelledby="overviewTab">
+          <div class="month-picker">
+            <button id="previousMonth" aria-label="Previous month">‹</button>
+            <button id="monthLabel" class="month-label" aria-label="Choose month"></button>
+            <button id="nextMonth" aria-label="Next month">›</button>
+            <input id="monthInput" type="month" aria-label="Month" />
+          </div>
+
+          <article class="total-card">
+            <p>Your share this month</p>
+            <strong id="monthTotal">€0.00</strong>
+            <div class="total-details">
+              <span id="expenseCount">No expenses yet</span>
+              <span id="reimbursementSummary" hidden></span>
+            </div>
+          </article>
+
+          <section class="section-block">
+            <div class="section-heading">
+              <h2>Where it went</h2>
+            </div>
+            <div id="breakdown" class="breakdown"></div>
+          </section>
+
+          <section class="section-block">
+            <div class="section-heading">
+              <h2>Recent</h2>
+              <button class="text-button" data-view-target="history">See all</button>
+            </div>
+            <div id="recentList" class="expense-list"></div>
+          </section>
+        </section>
+
+        <section id="historyView" class="view" aria-labelledby="historyTab">
+          <div class="page-title">
+            <p class="eyebrow">EVERY ENTRY</p>
+            <h1>History</h1>
+          </div>
+          <label class="search-field">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="m16 16 4 4"/></svg>
+            <input id="searchInput" type="search" placeholder="Search category, label or note" />
+          </label>
+          <div id="historyList" class="expense-list history-list"></div>
+        </section>
+      </main>
+
+      <nav class="bottom-nav" aria-label="Main navigation">
+        <button id="overviewTab" class="nav-item active" data-view="overview">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11 12 4l8 7v9H4z"/><path d="M9 20v-6h6v6"/></svg>
+          <span>Overview</span>
+        </button>
+        <button id="addButton" class="add-button" aria-label="Add expense">
+          <span>+</span>
+        </button>
+        <button id="historyTab" class="nav-item" data-view="history">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>
+          <span>History</span>
+        </button>
+      </nav>
+    </div>
+
+    <div id="expenseSheet" class="sheet-backdrop" hidden>
+      <section class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+        <div class="sheet-handle"></div>
+        <div class="sheet-header">
+          <div>
+            <p class="eyebrow" id="formModeLabel">NEW ENTRY</p>
+            <h2 id="sheetTitle">Add expense</h2>
+          </div>
+          <button id="closeSheet" class="close-button" aria-label="Close">×</button>
+        </div>
+
+        <form id="expenseForm">
+          <input id="expenseId" type="hidden" />
+          <label class="amount-field">
+            <span>€</span>
+            <input id="amountInput" inputmode="decimal" type="text" placeholder="0.00" autocomplete="off" required aria-label="Amount" />
+          </label>
+
+          <fieldset>
+            <legend>Category</legend>
+            <div id="categoryChoices" class="choice-grid"></div>
+          </fieldset>
+
+          <fieldset>
+            <legend>Labels <span>optional</span></legend>
+            <div id="labelChoices" class="label-choices"></div>
+          </fieldset>
+
+          <fieldset class="reimbursement-field">
+            <legend>Money coming back <span>optional</span></legend>
+            <div class="reimbursement-choices" id="reimbursementChoices">
+              <button type="button" data-reimbursement="0" class="selected">None</button>
+              <button type="button" data-reimbursement="50">50%</button>
+              <button type="button" data-reimbursement="100">All</button>
+              <button type="button" data-reimbursement="custom">Custom</button>
+            </div>
+            <label id="customReimbursementField" class="custom-reimbursement" hidden>
+              <span>Percentage coming back</span>
+              <span class="percent-input"><input id="customReimbursementInput" type="number" min="1" max="100" inputmode="numeric" value="25" /><b>%</b></span>
+            </label>
+            <p id="reimbursementPreview" class="reimbursement-preview" hidden></p>
+          </fieldset>
+
+          <div class="form-row">
+            <label>
+              <span>Date</span>
+              <input id="dateInput" type="date" required />
+            </label>
+            <label>
+              <span>Note <em>optional</em></span>
+              <input id="noteInput" type="text" maxlength="60" placeholder="Coffee, rent…" />
+            </label>
+          </div>
+
+          <div class="form-actions">
+            <button id="deleteButton" type="button" class="delete-button" hidden>Delete</button>
+            <button type="submit" class="save-button">Save expense</button>
+          </div>
+        </form>
+      </section>
+    </div>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    <script src="app.js"></script>
+  </body>
+</html>
