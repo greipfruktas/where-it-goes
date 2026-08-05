@@ -190,6 +190,53 @@ function showToast(message) {
   showToast.timer = setTimeout(() => $("#toast").classList.remove("show"), 1800);
 }
 
+function downloadFile(content, type, filename) {
+  const blob = new Blob([content], { type });
+  const link = Object.assign(document.createElement("a"), { href: URL.createObjectURL(blob), download: filename });
+  link.click();
+  URL.revokeObjectURL(link.href);
+}
+
+function csvCell(value) {
+  const text = String(value ?? "");
+  return /[",\n]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
+}
+
+function expensesCSV() {
+  const headers = ["Date", "Category", "Labels", "Note", "Paid", "Coming back %", "Coming back", "Your share"];
+  const rows = [...expenses]
+    .sort((a, b) => b.date.localeCompare(a.date) || b.createdAt - a.createdAt)
+    .map((expense) => [
+      expense.date,
+      expense.category,
+      (expense.labels || []).join(", "),
+      expense.note || "",
+      expense.amount.toFixed(2),
+      reimbursementPercent(expense),
+      amountComingBack(expense).toFixed(2),
+      yourShare(expense).toFixed(2)
+    ]);
+  return [headers, ...rows].map((row) => row.map(csvCell).join(",")).join("\n");
+}
+
+function exportExpenses(format) {
+  if (!expenses.length) { showToast("Nothing to export yet"); return; }
+  if (format === "csv") {
+    downloadFile(`\uFEFF${expensesCSV()}`, "text/csv;charset=utf-8", `where-it-goes-${localDateString()}.csv`);
+    showToast("Excel export ready");
+    return;
+  }
+  downloadFile(JSON.stringify(expenses, null, 2), "application/json", `where-it-goes-${localDateString()}.json`);
+  showToast("Backup export ready");
+}
+
+function toggleExportMenu(forceOpen = null) {
+  const menu = $("#exportMenu");
+  const open = forceOpen ?? menu.hidden;
+  menu.hidden = !open;
+  $("#exportButton").setAttribute("aria-expanded", String(open));
+}
+
 function switchView(view) {
   document.querySelectorAll(".view").forEach((element) => element.classList.toggle("active", element.id === `${view}View`));
   document.querySelectorAll(".nav-item").forEach((button) => button.classList.toggle("active", button.dataset.view === view));
@@ -263,12 +310,18 @@ $("#nextMonth").addEventListener("click", () => changeMonth(1));
 $("#monthLabel").addEventListener("click", () => $("#monthInput").showPicker?.());
 $("#monthInput").addEventListener("change", (event) => { if (event.target.value) { selectedMonth = event.target.value; render(); } });
 $("#searchInput").addEventListener("input", renderHistory);
-$("#exportButton").addEventListener("click", () => {
-  if (!expenses.length) { showToast("Nothing to export yet"); return; }
-  const blob = new Blob([JSON.stringify(expenses, null, 2)], { type: "application/json" });
-  const link = Object.assign(document.createElement("a"), { href: URL.createObjectURL(blob), download: `where-it-goes-${localDateString()}.json` });
-  link.click(); URL.revokeObjectURL(link.href); showToast("Export ready");
+$("#exportButton").addEventListener("click", (event) => {
+  event.stopPropagation();
+  toggleExportMenu();
 });
+$("#exportMenu").addEventListener("click", (event) => {
+  event.stopPropagation();
+  const button = event.target.closest("[data-export-format]");
+  if (!button) return;
+  toggleExportMenu(false);
+  exportExpenses(button.dataset.exportFormat);
+});
+document.addEventListener("click", () => toggleExportMenu(false));
 document.addEventListener("keydown", (event) => { if (event.key === "Escape" && !$("#expenseSheet").hidden) closeSheet(); });
 
 if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js"));

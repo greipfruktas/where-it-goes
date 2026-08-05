@@ -19,9 +19,15 @@
           <p class="eyebrow">WHERE IT GOES</p>
           <h1 id="greeting">Your month</h1>
         </div>
-        <button class="icon-button" id="exportButton" aria-label="Export expenses" title="Export expenses">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0-12 4 4m-4-4L8 7M5 13v6h14v-6" /></svg>
-        </button>
+        <div class="export-wrap">
+          <button class="icon-button" id="exportButton" aria-label="Export expenses" title="Export expenses" aria-expanded="false">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0-12 4 4m-4-4L8 7M5 13v6h14v-6" /></svg>
+          </button>
+          <div id="exportMenu" class="export-menu" hidden>
+            <button type="button" data-export-format="csv">Excel file <span>.csv</span></button>
+            <button type="button" data-export-format="json">Backup file <span>.json</span></button>
+          </div>
+        </div>
       </header>
 
       <main>

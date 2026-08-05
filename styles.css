@@ -28,6 +28,12 @@ h1 { margin-bottom: 0; font-size: 29px; line-height: 1.05; letter-spacing: -.04e
 h2 { margin-bottom: 0; font-size: 18px; letter-spacing: -.02em; }
 .icon-button, .close-button { width: 42px; height: 42px; border: 1px solid var(--line); border-radius: 50%; background: rgba(255,255,255,.65); display: grid; place-items: center; }
 .icon-button svg { width: 19px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.export-wrap { position: relative; }
+.export-menu { position: absolute; z-index: 30; right: 0; top: 50px; width: 178px; padding: 7px; border: 1px solid rgba(229,227,220,.9); border-radius: 17px; background: rgba(255,255,255,.96); box-shadow: var(--shadow); backdrop-filter: blur(18px); }
+.export-menu[hidden] { display: none; }
+.export-menu button { width: 100%; padding: 12px 11px; border: 0; border-radius: 12px; background: transparent; display: flex; align-items: center; justify-content: space-between; text-align: left; font-size: 13px; font-weight: 800; }
+.export-menu button:hover { background: var(--green-soft); color: var(--green); }
+.export-menu span { color: var(--muted); font-size: 11px; font-weight: 700; }
 .view { display: none; }
 .view.active { display: block; animation: appear .18s ease-out; }
 @keyframes appear { from { opacity: 0; transform: translateY(4px); } }
