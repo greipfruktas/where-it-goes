@@ -17,6 +17,7 @@ let selectedMonth = monthKey(new Date());
 let selectedCategory = "Food";
 let selectedLabels = [];
 let selectedReimbursementPercent = 0;
+let expandedBreakdownCategories = new Set();
 
 const $ = (selector) => document.querySelector(selector);
 const money = new Intl.NumberFormat("en-IE", { style: "currency", currency: "EUR" });
@@ -89,21 +90,35 @@ function render() {
   renderHistory();
 }
 
-function renderBreakdown(monthly, total) {
+function breakdownMarkup(monthly, total, expandedCategories) {
   const totals = monthly.reduce((map, expense) => {
     map[expense.category] = (map[expense.category] || 0) + yourShare(expense);
     return map;
   }, {});
+  const expensesByCategory = monthly.reduce((map, expense) => {
+    map[expense.category] = [...(map[expense.category] || []), expense];
+    return map;
+  }, {});
   const rows = Object.entries(totals).sort((a, b) => b[1] - a[1]);
-  $("#breakdown").innerHTML = rows.length ? rows.map(([name, amount]) => {
+  return rows.length ? rows.map(([name, amount]) => {
     const category = categoryFor(name);
     const percent = total ? Math.round((amount / total) * 100) : 0;
-    return `<div class="breakdown-row">
-      <div class="category-icon" style="background:${category.color}">${category.emoji}</div>
-      <div class="breakdown-copy"><strong>${name}</strong><div class="progress"><span style="width:${percent}%"></span></div></div>
-      <div class="breakdown-amount"><strong>${money.format(amount)}</strong><span>${percent}%</span></div>
+    const expanded = expandedCategories.has(name);
+    const expenses = expensesByCategory[name] || [];
+    return `<div class="breakdown-group${expanded ? " open" : ""}">
+      <button class="breakdown-row" type="button" data-breakdown-category="${escapeHTML(name)}" aria-expanded="${expanded}">
+        <div class="category-icon" style="background:${category.color}">${category.emoji}</div>
+        <div class="breakdown-copy"><strong>${escapeHTML(name)}</strong><div class="progress"><span style="width:${percent}%"></span></div></div>
+        <div class="breakdown-amount"><strong>${money.format(amount)}</strong><span>${percent}% · ${expenses.length} item${expenses.length === 1 ? "" : "s"}</span></div>
+        <span class="breakdown-chevron" aria-hidden="true">⌄</span>
+      </button>
+      ${expanded ? `<div class="breakdown-expenses">${expenses.map(expenseMarkup).join("")}</div>` : ""}
     </div>`;
   }).join("") : `<div class="empty-state">Your category breakdown will appear here.</div>`;
+}
+
+function renderBreakdown(monthly, total) {
+  $("#breakdown").innerHTML = breakdownMarkup(monthly, total, expandedBreakdownCategories);
 }
 
 function expenseMarkup(expense) {
@@ -302,6 +317,14 @@ $("#deleteButton").addEventListener("click", () => {
 document.addEventListener("click", (event) => {
   const expenseButton = event.target.closest("[data-expense-id]");
   if (expenseButton) openSheet(expenses.find((item) => item.id === expenseButton.dataset.expenseId));
+  const breakdownButton = event.target.closest("[data-breakdown-category]");
+  if (breakdownButton) {
+    const category = breakdownButton.dataset.breakdownCategory;
+    expandedBreakdownCategories = new Set(expandedBreakdownCategories);
+    expandedBreakdownCategories.has(category) ? expandedBreakdownCategories.delete(category) : expandedBreakdownCategories.add(category);
+    render();
+    return;
+  }
   const viewButton = event.target.closest("[data-view], [data-view-target]");
   if (viewButton) switchView(viewButton.dataset.view || viewButton.dataset.viewTarget);
 });
