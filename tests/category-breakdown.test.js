@@ -1,0 +1,51 @@
+import assert from "node:assert/strict";
+import fs from "node:fs";
+import vm from "node:vm";
+
+const source = fs.readFileSync(new URL("../app.js", import.meta.url), "utf8");
+function element() {
+  return {
+    value: "",
+    hidden: false,
+    innerHTML: "",
+    textContent: "",
+    addEventListener: () => {},
+    classList: { add: () => {}, remove: () => {}, toggle: () => {} },
+    style: {},
+    setAttribute: () => {},
+    reset: () => {},
+    showPicker: () => {}
+  };
+}
+
+const sandbox = {
+  Intl,
+  console,
+  crypto: { randomUUID: () => "test-id" },
+  localStorage: { getItem: () => "[]", setItem: () => {} },
+  document: {
+    querySelector: () => element(),
+    querySelectorAll: () => [],
+    addEventListener: () => {},
+    createElement: () => ({ click: () => {} })
+  },
+  window: { addEventListener: () => {}, scrollTo: () => {} },
+  navigator: {}
+};
+
+vm.createContext(sandbox);
+vm.runInContext(`${source}\nthis.__test = { breakdownMarkup };`, sandbox);
+
+const monthly = [
+  { id: "coffee", amount: 4.5, category: "Food", labels: ["Treat"], reimbursementPercent: 0, date: "2026-08-17", note: "Coffee", createdAt: 2 },
+  { id: "bus", amount: 10, category: "Transport", labels: [], reimbursementPercent: 50, date: "2026-08-16", note: "Bus", createdAt: 1 }
+];
+
+const collapsed = sandbox.__test.breakdownMarkup(monthly, 9.5, new Set());
+assert.match(collapsed, /data-breakdown-category="Food"/);
+assert.doesNotMatch(collapsed, /data-expense-id="coffee"/);
+
+const expanded = sandbox.__test.breakdownMarkup(monthly, 9.5, new Set(["Food"]));
+assert.match(expanded, /data-breakdown-category="Food"/);
+assert.match(expanded, /data-expense-id="coffee"/);
+assert.doesNotMatch(expanded, /data-expense-id="bus"/);
