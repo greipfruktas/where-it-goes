@@ -101,6 +101,8 @@ h2 { margin-bottom: 0; font-size: 18px; letter-spacing: -.02em; }
 fieldset { margin: 0 0 21px; padding: 0; border: 0; }
 legend { margin-bottom: 10px; font-size: 13px; font-weight: 800; }
 legend span, .form-row em { color: var(--muted); font-size: 11px; font-style: normal; font-weight: 500; }
+.fieldset-heading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.fieldset-heading legend { margin-bottom: 0; }
 .choice-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
 .choice { min-height: 72px; padding: 8px 4px; border: 1px solid var(--line); border-radius: 15px; background: var(--card); display: grid; place-items: center; align-content: center; gap: 5px; font-size: 11px; }
 .choice .emoji { font-size: 22px; }
@@ -126,6 +128,14 @@ legend span, .form-row em { color: var(--muted); font-size: 11px; font-style: no
 .save-button, .delete-button { height: 54px; border-radius: 17px; font-weight: 800; }
 .save-button { flex: 1; border: 0; background: var(--green); color: white; }
 .delete-button { padding: 0 17px; border: 1px solid #e8cbc4; background: #fff4f1; color: #b74d39; }
+.compact-sheet { max-height: 88dvh; }
+.sheet-note { margin: 12px 2px 18px; color: var(--muted); font-size: 13px; line-height: 1.4; }
+.groups-list { display: grid; gap: 9px; }
+.group-edit-row { display: grid; grid-template-columns: 54px 1fr; gap: 9px; align-items: center; }
+.group-edit-row input { height: 48px; border: 1px solid var(--line); border-radius: 14px; background: var(--card); outline: none; }
+.group-icon-input { padding: 0; text-align: center; font-size: 24px; }
+.group-name-input { width: 100%; padding: 0 13px; }
+.full-width-button { width: 100%; margin-top: 22px; }
 .toast { position: fixed; z-index: 50; left: 50%; bottom: 105px; transform: translate(-50%, 20px); padding: 11px 17px; border-radius: 999px; background: var(--ink); color: white; box-shadow: var(--shadow); font-size: 12px; font-weight: 700; opacity: 0; pointer-events: none; transition: .2s ease; }
 .toast.show { opacity: 1; transform: translate(-50%, 0); }
 @media (min-width: 700px) { .sheet { bottom: 24px; border-radius: 29px; } }

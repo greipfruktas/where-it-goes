@@ -111,7 +111,10 @@
           </label>
 
           <fieldset>
-            <legend>Category</legend>
+            <div class="fieldset-heading">
+              <legend>Category</legend>
+              <button id="manageGroupsButton" type="button" class="text-button">Edit groups</button>
+            </div>
             <div id="categoryChoices" class="choice-grid"></div>
           </fieldset>
 
@@ -151,6 +154,22 @@
             <button type="submit" class="save-button">Save expense</button>
           </div>
         </form>
+      </section>
+    </div>
+
+    <div id="groupsSheet" class="sheet-backdrop" hidden>
+      <section class="sheet compact-sheet" role="dialog" aria-modal="true" aria-labelledby="groupsTitle">
+        <div class="sheet-handle"></div>
+        <div class="sheet-header">
+          <div>
+            <p class="eyebrow">GROUPS</p>
+            <h2 id="groupsTitle">Edit groups</h2>
+          </div>
+          <button id="closeGroupsSheet" class="close-button" aria-label="Close">×</button>
+        </div>
+        <p class="sheet-note">Change the name or emoji. Existing expenses move with the renamed group.</p>
+        <div id="groupsList" class="groups-list"></div>
+        <button id="saveGroupsButton" type="button" class="save-button full-width-button">Save groups</button>
       </section>
     </div>
 

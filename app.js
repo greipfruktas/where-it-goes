@@ -1,6 +1,7 @@
 const STORAGE_KEY = "where-it-goes-expenses-v1";
+const GROUPS_KEY = "where-it-goes-groups-v1";
 
-const categories = [
+const defaultCategories = [
   { name: "Food", emoji: "🥑", color: "#e6f0df" },
   { name: "Home", emoji: "🏡", color: "#f3e7d4" },
   { name: "Transport", emoji: "🚲", color: "#dfeaf0" },
@@ -13,6 +14,7 @@ const categories = [
 const labels = ["Must", "Work", "Family", "Treat", "Subscription"];
 
 let expenses = loadExpenses();
+let categories = loadCategories();
 let selectedMonth = monthKey(new Date());
 let selectedCategory = "Food";
 let selectedLabels = [];
@@ -36,8 +38,28 @@ function loadExpenses() {
   catch { return []; }
 }
 
+function loadCategories() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(GROUPS_KEY)) || [];
+    const normalized = saved
+      .filter((category) => category?.name)
+      .map((category, index) => ({
+        name: String(category.name).trim(),
+        emoji: String(category.emoji || defaultCategories[index]?.emoji || "✨").trim() || "✨",
+        color: category.color || defaultCategories[index]?.color || "#e8e9e5"
+      }));
+    return normalized.length ? normalized : [...defaultCategories];
+  } catch {
+    return [...defaultCategories];
+  }
+}
+
 function persist() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(expenses));
+}
+
+function persistCategories() {
+  localStorage.setItem(GROUPS_KEY, JSON.stringify(categories));
 }
 
 function formatDate(dateString, options = { day: "numeric", month: "short" }) {
@@ -46,6 +68,32 @@ function formatDate(dateString, options = { day: "numeric", month: "short" }) {
 
 function categoryFor(name) {
   return categories.find((category) => category.name === name) || categories.at(-1);
+}
+
+function renameCategory(state, oldName, nextCategory) {
+  const nextName = String(nextCategory.name || oldName).trim() || oldName;
+  const nextEmoji = String(nextCategory.emoji || "✨").trim().slice(0, 4) || "✨";
+  const categories = state.categories.map((category) => category.name === oldName ? {
+    ...category,
+    name: nextName,
+    emoji: nextEmoji
+  } : category);
+  const expenses = state.expenses.map((expense) => expense.category === oldName ? { ...expense, category: nextName } : expense);
+  const selectedCategory = state.selectedCategory === oldName ? nextName : state.selectedCategory;
+  const expandedCategories = new Set([...state.expandedCategories].map((category) => category === oldName ? nextName : category));
+  return { categories, expenses, selectedCategory, expandedCategories };
+}
+
+function applyCategoryChanges(state, nextCategories) {
+  const renameMap = new Map(state.categories.map((category, index) => [category.name, nextCategories[index]?.name || category.name]));
+  const categories = nextCategories.map((category, index) => ({
+    ...state.categories[index],
+    ...category
+  }));
+  const expenses = state.expenses.map((expense) => renameMap.has(expense.category) ? { ...expense, category: renameMap.get(expense.category) } : expense);
+  const selectedCategory = renameMap.get(state.selectedCategory) || state.selectedCategory;
+  const expandedCategories = new Set([...state.expandedCategories].map((category) => renameMap.get(category) || category));
+  return { categories, expenses, selectedCategory, expandedCategories };
 }
 
 function reimbursementPercent(expense) {
@@ -182,6 +230,48 @@ function closeSheet() {
   document.body.style.overflow = "";
 }
 
+function openGroupsSheet() {
+  $("#groupsList").innerHTML = categories.map((category, index) => `
+    <label class="group-edit-row">
+      <input class="group-icon-input" data-group-emoji="${index}" maxlength="4" value="${escapeHTML(category.emoji)}" aria-label="${escapeHTML(category.name)} icon" />
+      <input class="group-name-input" data-group-name="${index}" maxlength="24" value="${escapeHTML(category.name)}" aria-label="${escapeHTML(category.name)} name" />
+    </label>
+  `).join("");
+  $("#groupsSheet").hidden = false;
+  document.body.style.overflow = "hidden";
+}
+
+function closeGroupsSheet() {
+  $("#groupsSheet").hidden = true;
+  document.body.style.overflow = $("#expenseSheet").hidden ? "" : "hidden";
+}
+
+function saveGroups() {
+  const nextCategories = categories.map((category, index) => ({
+    ...category,
+    name: document.querySelector(`[data-group-name="${index}"]`).value.trim(),
+    emoji: document.querySelector(`[data-group-emoji="${index}"]`).value.trim() || "✨"
+  }));
+  if (nextCategories.some((category) => !category.name)) { showToast("Group name needed"); return; }
+  const lowerNames = nextCategories.map((category) => category.name.toLowerCase());
+  if (new Set(lowerNames).size !== lowerNames.length) { showToast("Group names must be unique"); return; }
+
+  ({ categories, expenses, selectedCategory, expandedCategories: expandedBreakdownCategories } = applyCategoryChanges({
+    categories,
+    expenses,
+    selectedCategory,
+    expandedCategories: expandedBreakdownCategories
+  }, nextCategories));
+
+  persistCategories();
+  persist();
+  initChoices();
+  updateChoices();
+  render();
+  closeGroupsSheet();
+  showToast("Groups updated");
+}
+
 function updateChoices() {
   document.querySelectorAll("[data-category]").forEach((button) => button.classList.toggle("selected", button.dataset.category === selectedCategory));
   document.querySelectorAll("[data-label]").forEach((button) => button.classList.toggle("selected", selectedLabels.includes(button.dataset.label)));
@@ -272,6 +362,10 @@ render();
 $("#addButton").addEventListener("click", () => openSheet());
 $("#closeSheet").addEventListener("click", closeSheet);
 $("#expenseSheet").addEventListener("click", (event) => { if (event.target === event.currentTarget) closeSheet(); });
+$("#manageGroupsButton").addEventListener("click", openGroupsSheet);
+$("#closeGroupsSheet").addEventListener("click", closeGroupsSheet);
+$("#groupsSheet").addEventListener("click", (event) => { if (event.target === event.currentTarget) closeGroupsSheet(); });
+$("#saveGroupsButton").addEventListener("click", saveGroups);
 $("#categoryChoices").addEventListener("click", (event) => {
   const button = event.target.closest("[data-category]");
   if (button) { selectedCategory = button.dataset.category; updateChoices(); }
