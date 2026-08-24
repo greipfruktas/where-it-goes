@@ -24,6 +24,7 @@ const sandbox = {
   crypto: { randomUUID: () => "test-id" },
   localStorage: { getItem: () => "[]", setItem: () => {} },
   document: {
+    body: { dataset: {}, style: {} },
     querySelector: () => element(),
     querySelectorAll: () => [],
     addEventListener: () => {},

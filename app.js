@@ -1,5 +1,11 @@
 const STORAGE_KEY = "where-it-goes-expenses-v1";
 const GROUPS_KEY = "where-it-goes-groups-v1";
+const STYLE_KEY = "where-it-goes-style-v1";
+const styleOptions = {
+  pocket: { label: "A", themeColor: "#f3ecdc" },
+  neon: { label: "B", themeColor: "#111426" },
+  swiss: { label: "C", themeColor: "#f7f7f2" }
+};
 
 const defaultCategories = [
   { name: "Food", emoji: "🥑", color: "#e6f0df" },
@@ -20,6 +26,7 @@ let selectedCategory = "Food";
 let selectedLabels = [];
 let selectedReimbursementPercent = 0;
 let expandedBreakdownCategories = new Set();
+let selectedStyle = loadStyle();
 
 const $ = (selector) => document.querySelector(selector);
 const money = new Intl.NumberFormat("en-IE", { style: "currency", currency: "EUR" });
@@ -54,6 +61,15 @@ function loadCategories() {
   }
 }
 
+function loadStyle() {
+  try {
+    const saved = localStorage.getItem(STYLE_KEY);
+    return styleOptions[saved] ? saved : "pocket";
+  } catch {
+    return "pocket";
+  }
+}
+
 function persist() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(expenses));
 }
@@ -68,6 +84,19 @@ function formatDate(dateString, options = { day: "numeric", month: "short" }) {
 
 function categoryFor(name) {
   return categories.find((category) => category.name === name) || categories.at(-1);
+}
+
+function applyAppStyle(style, save = true) {
+  selectedStyle = styleOptions[style] ? style : "pocket";
+  document.body.dataset.style = selectedStyle;
+  document.querySelector('meta[name="theme-color"]')?.setAttribute("content", styleOptions[selectedStyle].themeColor);
+  $("#styleButtonLabel").textContent = styleOptions[selectedStyle].label;
+  document.querySelectorAll("[data-style-option]").forEach((button) => {
+    const active = button.dataset.styleOption === selectedStyle;
+    button.classList.toggle("selected", active);
+    button.setAttribute("aria-pressed", String(active));
+  });
+  if (save) localStorage.setItem(STYLE_KEY, selectedStyle);
 }
 
 function renameCategory(state, oldName, nextCategory) {
@@ -342,6 +371,13 @@ function toggleExportMenu(forceOpen = null) {
   $("#exportButton").setAttribute("aria-expanded", String(open));
 }
 
+function toggleStyleMenu(forceOpen = null) {
+  const menu = $("#styleMenu");
+  const open = forceOpen ?? menu.hidden;
+  menu.hidden = !open;
+  $("#styleButton").setAttribute("aria-expanded", String(open));
+}
+
 function switchView(view) {
   document.querySelectorAll(".view").forEach((element) => element.classList.toggle("active", element.id === `${view}View`));
   document.querySelectorAll(".nav-item").forEach((button) => button.classList.toggle("active", button.dataset.view === view));
@@ -357,6 +393,7 @@ function changeMonth(delta) {
 }
 
 initChoices();
+applyAppStyle(selectedStyle, false);
 render();
 
 $("#addButton").addEventListener("click", () => openSheet());
@@ -429,6 +466,7 @@ $("#monthInput").addEventListener("change", (event) => { if (event.target.value)
 $("#searchInput").addEventListener("input", renderHistory);
 $("#exportButton").addEventListener("click", (event) => {
   event.stopPropagation();
+  toggleStyleMenu(false);
   toggleExportMenu();
 });
 $("#exportMenu").addEventListener("click", (event) => {
@@ -438,7 +476,25 @@ $("#exportMenu").addEventListener("click", (event) => {
   toggleExportMenu(false);
   exportExpenses(button.dataset.exportFormat);
 });
-document.addEventListener("click", () => toggleExportMenu(false));
-document.addEventListener("keydown", (event) => { if (event.key === "Escape" && !$("#expenseSheet").hidden) closeSheet(); });
+$("#styleButton").addEventListener("click", (event) => {
+  event.stopPropagation();
+  toggleExportMenu(false);
+  toggleStyleMenu();
+});
+$("#styleMenu").addEventListener("click", (event) => {
+  event.stopPropagation();
+  const button = event.target.closest("[data-style-option]");
+  if (!button) return;
+  applyAppStyle(button.dataset.styleOption);
+  toggleStyleMenu(false);
+  showToast(`Style ${styleOptions[selectedStyle].label} applied`);
+});
+document.addEventListener("click", () => { toggleExportMenu(false); toggleStyleMenu(false); });
+document.addEventListener("keydown", (event) => {
+  if (event.key !== "Escape") return;
+  toggleExportMenu(false);
+  toggleStyleMenu(false);
+  if (!$("#expenseSheet").hidden) closeSheet();
+});
 
 if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js"));

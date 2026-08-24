@@ -19,13 +19,26 @@
           <p class="eyebrow">WHERE IT GOES</p>
           <h1 id="greeting">Your month</h1>
         </div>
-        <div class="export-wrap">
-          <button class="icon-button" id="exportButton" aria-label="Export expenses" title="Export expenses" aria-expanded="false">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0-12 4 4m-4-4L8 7M5 13v6h14v-6" /></svg>
-          </button>
-          <div id="exportMenu" class="export-menu" hidden>
-            <button type="button" data-export-format="csv">Excel file <span>.csv</span></button>
-            <button type="button" data-export-format="json">Backup file <span>.json</span></button>
+        <div class="topbar-actions">
+          <div class="style-wrap">
+            <button class="style-button" id="styleButton" type="button" aria-label="Choose app style" title="Choose app style" aria-expanded="false">
+              <span>Style</span>
+              <b id="styleButtonLabel">A</b>
+            </button>
+            <div id="styleMenu" class="popup-menu style-menu" hidden>
+              <button type="button" data-style-option="pocket">Option A <span>Pocket Ledger</span></button>
+              <button type="button" data-style-option="neon">Option B <span>Neon Night</span></button>
+              <button type="button" data-style-option="swiss">Option C <span>Minimal Swiss</span></button>
+            </div>
+          </div>
+          <div class="export-wrap">
+            <button class="icon-button" id="exportButton" aria-label="Export expenses" title="Export expenses" aria-expanded="false">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0-12 4 4m-4-4L8 7M5 13v6h14v-6" /></svg>
+            </button>
+            <div id="exportMenu" class="popup-menu export-menu" hidden>
+              <button type="button" data-export-format="csv">Excel file <span>.csv</span></button>
+              <button type="button" data-export-format="json">Backup file <span>.json</span></button>
+            </div>
           </div>
         </div>
       </header>
