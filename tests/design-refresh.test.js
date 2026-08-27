@@ -32,3 +32,10 @@ assert.match(html, /id="rangeStartDisplay"/, "from date should have centered vis
 assert.match(html, /id="rangeEndDisplay"/, "to date should have centered visible text");
 assert.match(css, /\.date-field input \{[^}]*opacity:\s*0/s, "native date inputs should be invisible tap targets");
 assert.match(js, /function updateRangeDisplays/, "date display text should be synced from the real inputs");
+assert.match(html, /id="breakdownListButton"/, "category breakdown should include a list view button");
+assert.match(html, /id="breakdownPieButton"/, "category breakdown should include a pie view button");
+assert.match(html, /data-breakdown-view="pie"/, "category breakdown should expose a pie view option");
+assert.match(css, /\.breakdown-view-switch/, "list/pie switch should be styled as a compact control");
+assert.match(css, /\.pie-chart/, "pie chart should have a dedicated mobile-friendly style hook");
+assert.match(js, /function pieChartMarkup/, "pie chart markup should be rendered by a named helper");
+assert.match(js, /function categoryTotals/, "category totals should be shared by list and pie views");
