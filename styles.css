@@ -94,12 +94,15 @@ h2 { margin-bottom: 0; font-size: 19px; letter-spacing: -.035em; }
 .date-field:focus-within .date-display { border-color: rgba(49,92,72,.46); box-shadow: 0 0 0 3px rgba(49,92,72,.12); }
 .range-connector { height: 48px; display: grid; place-items: center; color: var(--green); font-size: 17px; font-weight: 950; }
 .total-card { min-height: 202px; padding: 31px 30px; border: 1px solid rgba(255,255,255,.14); border-radius: 32px; background: linear-gradient(145deg, var(--green) 0%, var(--green-deep) 100%); color: #fff; display: flex; flex-direction: column; justify-content: center; box-shadow: 0 24px 54px rgba(36, 63, 47, .26), inset 0 1px 0 rgba(255,255,255,.16); overflow: hidden; position: relative; isolation: isolate; }
-.pocket-ledger-card::before { content: ""; position: absolute; inset: 13px; border: 1px solid rgba(255,255,255,.13); border-radius: 24px; background: linear-gradient(135deg, rgba(255,255,255,.14), transparent 44%); z-index: -1; }
-.total-card::after { content: ""; position: absolute; width: 210px; height: 210px; right: -66px; top: -78px; border: 42px solid rgba(255,255,255,.055); border-radius: 50%; }
-.total-card p { margin-bottom: 12px; color: rgba(255,255,255,.72); font-size: 14px; font-weight: 750; }
-.total-card strong { z-index: 1; font-size: clamp(46px, 13vw, 61px); line-height: .95; letter-spacing: -.065em; text-shadow: 0 8px 24px rgba(0,0,0,.12); }
-.total-card span { margin-top: 17px; color: rgba(255,255,255,.76); font-size: 13px; }
-.total-details { z-index: 1; display: grid; gap: 5px; margin-top: 17px; }
+.money-wheel-card { width: min(100%, 326px); min-height: auto; aspect-ratio: 1; margin: 0 auto; padding: 18px; border-radius: 50%; display: grid; place-items: center; background: var(--green); box-shadow: 0 24px 54px rgba(36, 63, 47, .23), inset 0 1px 0 rgba(255,255,255,.22); }
+.money-wheel { position: absolute; inset: 0; border-radius: inherit; background: linear-gradient(145deg, rgba(255,255,255,.22), rgba(255,255,255,.06)); }
+.pocket-ledger-card::before { content: ""; position: absolute; inset: 13px; border: 1px solid rgba(255,255,255,.24); border-radius: inherit; background: radial-gradient(circle, rgba(255,255,255,.18), transparent 66%); z-index: 0; pointer-events: none; }
+.total-card::after { content: ""; position: absolute; inset: 23px; border: 1px solid rgba(255,255,255,.28); border-radius: inherit; pointer-events: none; }
+.money-wheel-center { z-index: 1; width: 71%; aspect-ratio: 1; padding: 15px; border: 1px solid rgba(255,255,255,.42); border-radius: 50%; background: rgba(36, 63, 47, .78); backdrop-filter: blur(10px); display: grid; place-items: center; align-content: center; text-align: center; box-shadow: 0 18px 42px rgba(24, 38, 30, .24), inset 0 1px 0 rgba(255,255,255,.24); }
+.total-card p { margin-bottom: 8px; color: rgba(255,255,255,.76); font-size: 12px; line-height: 1.15; font-weight: 750; }
+.total-card strong { z-index: 1; font-size: clamp(35px, 10vw, 47px); line-height: .95; letter-spacing: -.065em; text-shadow: 0 8px 24px rgba(0,0,0,.12); }
+.total-card span { margin-top: 10px; color: rgba(255,255,255,.76); font-size: 11px; line-height: 1.18; }
+.total-details { z-index: 1; display: grid; gap: 4px; margin-top: 13px; }
 .total-details span { margin-top: 0; }
 .total-details span + span { color: #d1e5d8; font-weight: 700; }
 .section-block { margin-top: 29px; }
@@ -224,7 +227,8 @@ body[data-style="neon"] {
 }
 body[data-style="neon"]::before { opacity: 0; }
 body[data-style="neon"] .total-card { background: linear-gradient(145deg, #702bff 0%, #13284f 52%, #052e35 100%); box-shadow: 0 24px 58px rgba(58, 35, 140, .38), 0 0 42px rgba(108,244,210,.12); }
-body[data-style="neon"] .pocket-ledger-card::before { border-color: rgba(108,244,210,.22); background: linear-gradient(135deg, rgba(108,244,210,.18), transparent 45%); }
+body[data-style="neon"] .money-wheel-center { background: rgba(13,16,33,.82); border-color: rgba(108,244,210,.28); }
+body[data-style="neon"] .pocket-ledger-card::before { border-color: rgba(108,244,210,.22); background: radial-gradient(circle, rgba(108,244,210,.18), transparent 66%); }
 body[data-style="neon"] .breakdown-row,
 body[data-style="neon"] .expense-item,
 body[data-style="neon"] .search-field,
@@ -273,7 +277,8 @@ body[data-style="swiss"] {
 body[data-style="swiss"]::before { opacity: 0; }
 body[data-style="swiss"] h1,
 body[data-style="swiss"] h2 { letter-spacing: -.07em; }
-body[data-style="swiss"] .total-card { border-radius: 8px; background: #11110f; box-shadow: none; }
+body[data-style="swiss"] .total-card { border-radius: 50%; background: #11110f; box-shadow: none; }
+body[data-style="swiss"] .money-wheel-center { background: rgba(17,17,15,.86); box-shadow: none; }
 body[data-style="swiss"] .pocket-ledger-card::before,
 body[data-style="swiss"] .total-card::after { display: none; }
 body[data-style="swiss"] .breakdown-row,

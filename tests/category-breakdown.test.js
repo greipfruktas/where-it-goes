@@ -35,7 +35,7 @@ const sandbox = {
 };
 
 vm.createContext(sandbox);
-vm.runInContext(`${source}\nthis.__test = { breakdownMarkup, renameCategory, applyCategoryChanges, expensesForPeriod, periodLabel };`, sandbox);
+vm.runInContext(`${source}\nthis.__test = { breakdownMarkup, categoryTotals, categoryWheelGradient, renameCategory, applyCategoryChanges, expensesForPeriod, periodLabel };`, sandbox);
 
 const monthly = [
   { id: "coffee", amount: 4.5, category: "Food", labels: ["Treat"], reimbursementPercent: 0, date: "2026-08-17", note: "Coffee", createdAt: 2 },
@@ -55,6 +55,19 @@ assert.deepEqual(august.map((expense) => expense.id), ["coffee", "bus"]);
 const collapsed = sandbox.__test.breakdownMarkup(august, 9.5, new Set());
 assert.match(collapsed, /data-breakdown-category="Food"/);
 assert.doesNotMatch(collapsed, /data-expense-id="coffee"/);
+
+const categoryRows = sandbox.__test.categoryTotals(august, 9.5);
+assert.equal(categoryRows.length, 2);
+assert.equal(categoryRows[0].name, "Transport");
+assert.equal(categoryRows[0].amount, 5);
+assert.equal(categoryRows[0].percent, 53);
+assert.equal(categoryRows[1].name, "Food");
+assert.equal(categoryRows[1].amount, 4.5);
+
+const wheelGradient = sandbox.__test.categoryWheelGradient(august, 9.5);
+assert.match(wheelGradient, /^conic-gradient\(/);
+assert.match(wheelGradient, /#dfeaf0 0% 52\.63%/);
+assert.match(wheelGradient, /#e6f0df 52\.63% 100%/);
 
 const expanded = sandbox.__test.breakdownMarkup(monthly, 9.5, new Set(["Food"]));
 assert.match(expanded, /data-breakdown-category="Food"/);

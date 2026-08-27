@@ -73,12 +73,15 @@
             </div>
           </div>
 
-          <article class="total-card pocket-ledger-card">
-            <p id="periodTotalLabel">Your share this month</p>
-            <strong id="monthTotal">€0.00</strong>
-            <div class="total-details">
-              <span id="expenseCount">No expenses yet</span>
-              <span id="reimbursementSummary" hidden></span>
+          <article class="total-card pocket-ledger-card money-wheel-card" aria-labelledby="periodTotalLabel">
+            <div id="moneyWheel" class="money-wheel" aria-hidden="true"></div>
+            <div class="money-wheel-center">
+              <p id="periodTotalLabel">Your share this month</p>
+              <strong id="monthTotal">€0.00</strong>
+              <div class="total-details">
+                <span id="expenseCount">No expenses yet</span>
+                <span id="reimbursementSummary" hidden></span>
+              </div>
             </div>
           </article>
 

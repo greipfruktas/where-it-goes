@@ -209,6 +209,7 @@ function render() {
   $("#expenseCount").textContent = filtered.length ? `${filtered.length} expense${filtered.length === 1 ? "" : "s"} recorded` : "No expenses yet";
   $("#reimbursementSummary").hidden = comingBackTotal === 0;
   $("#reimbursementSummary").textContent = `${money.format(paidTotal)} paid · ${money.format(comingBackTotal)} coming back`;
+  $("#moneyWheel").style.background = categoryWheelGradient(filtered, total);
 
   renderBreakdown(filtered, total);
   renderExpenseList($("#recentList"), filtered.slice(0, 4), periodMode === "range" ? "No expenses in this date range." : "No expenses this month. Add your first one.");
@@ -220,7 +221,7 @@ function updateRangeDisplays() {
   $("#rangeEndDisplay").textContent = shortDateLabel(rangeEnd);
 }
 
-function breakdownMarkup(monthly, total, expandedCategories) {
+function categoryTotals(monthly, total) {
   const totals = monthly.reduce((map, expense) => {
     map[expense.category] = (map[expense.category] || 0) + yourShare(expense);
     return map;
@@ -229,12 +230,34 @@ function breakdownMarkup(monthly, total, expandedCategories) {
     map[expense.category] = [...(map[expense.category] || []), expense];
     return map;
   }, {});
-  const rows = Object.entries(totals).sort((a, b) => b[1] - a[1]);
-  return rows.length ? rows.map(([name, amount]) => {
-    const category = categoryFor(name);
-    const percent = total ? Math.round((amount / total) * 100) : 0;
+  return Object.entries(totals)
+    .sort((a, b) => b[1] - a[1])
+    .map(([name, amount]) => ({
+      name,
+      amount,
+      category: categoryFor(name),
+      percent: total ? Math.round((amount / total) * 100) : 0,
+      expenses: expensesByCategory[name] || []
+    }));
+}
+
+function categoryWheelGradient(monthly, total) {
+  const rows = categoryTotals(monthly, total).filter((row) => row.amount > 0);
+  if (!rows.length || total <= 0) return "linear-gradient(145deg, rgba(255,255,255,.22), rgba(255,255,255,.06))";
+  let cursor = 0;
+  const stops = rows.map((row, index) => {
+    const start = cursor;
+    const end = index === rows.length - 1 ? 100 : cursor + (row.amount / total) * 100;
+    cursor = end;
+    return `${row.category.color} ${start.toFixed(2).replace(/\.00$/, "")}% ${end.toFixed(2).replace(/\.00$/, "")}%`;
+  });
+  return `conic-gradient(${stops.join(", ")})`;
+}
+
+function breakdownMarkup(monthly, total, expandedCategories) {
+  const rows = categoryTotals(monthly, total);
+  return rows.length ? rows.map(({ name, amount, category, percent, expenses }) => {
     const expanded = expandedCategories.has(name);
-    const expenses = expensesByCategory[name] || [];
     return `<div class="breakdown-group${expanded ? " open" : ""}">
       <button class="breakdown-row" type="button" data-breakdown-category="${escapeHTML(name)}" aria-expanded="${expanded}">
         <div class="category-icon" style="background:${category.color}">${category.emoji}</div>

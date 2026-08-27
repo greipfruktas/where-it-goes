@@ -5,7 +5,7 @@ const html = fs.readFileSync(new URL("../index.html", import.meta.url), "utf8");
 const css = fs.readFileSync(new URL("../styles.css", import.meta.url), "utf8");
 const js = fs.readFileSync(new URL("../app.js", import.meta.url), "utf8");
 
-assert.match(html, /class="total-card pocket-ledger-card"/, "monthly total card should opt into the Pocket Ledger treatment");
+assert.match(html, /class="total-card pocket-ledger-card[^"]*"/, "monthly total card should opt into the Pocket Ledger treatment");
 assert.match(css, /--paper:\s*#f3ecdc/, "Pocket Ledger should use a warmer paper background");
 assert.match(css, /\.pocket-ledger-card::before/, "Pocket Ledger total card should have a tactile paper/highlight layer");
 assert.match(css, /\.expense-item:active/, "expense rows should have a touch-friendly pressed state");
@@ -32,3 +32,8 @@ assert.match(html, /id="rangeStartDisplay"/, "from date should have centered vis
 assert.match(html, /id="rangeEndDisplay"/, "to date should have centered visible text");
 assert.match(css, /\.date-field input \{[^}]*opacity:\s*0/s, "native date inputs should be invisible tap targets");
 assert.match(js, /function updateRangeDisplays/, "date display text should be synced from the real inputs");
+assert.match(html, /class="total-card pocket-ledger-card money-wheel-card"/, "top total card should be redesigned as a money wheel");
+assert.match(html, /id="moneyWheel"/, "top total card should include a category-color wheel layer");
+assert.match(css, /\.money-wheel-card/, "money wheel card should have a dedicated circular style hook");
+assert.match(css, /\.money-wheel-center/, "money wheel should keep the total amount readable in the center");
+assert.match(js, /function categoryWheelGradient/, "category wheel should be generated from category totals");
