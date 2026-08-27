@@ -84,12 +84,12 @@ h2 { margin-bottom: 0; font-size: 19px; letter-spacing: -.035em; }
 .month-label:active { background: rgba(255,250,240,.56); transform: var(--pressed); }
 #monthInput { position: absolute; width: 150px; height: 36px; opacity: 0; pointer-events: none; }
 .date-range-controls { display: block; }
-.date-range-card { padding: 12px; border: 1px solid rgba(109, 86, 52, .14); border-radius: 22px; background: rgba(255,250,240,.58); box-shadow: inset 0 1px 0 rgba(255,255,255,.42), 0 10px 24px rgba(87, 62, 34, .055); display: grid; grid-template-columns: 1fr 30px 1fr; align-items: end; gap: 8px; }
+.date-range-card { padding: 12px; border: 1px solid rgba(109, 86, 52, .14); border-radius: 22px; background: rgba(255,250,240,.58); box-shadow: inset 0 1px 0 rgba(255,255,255,.42), 0 10px 24px rgba(87, 62, 34, .055); display: grid; grid-template-columns: minmax(0, 1fr) 24px minmax(0, 1fr); align-items: end; gap: 8px; }
 .date-field { display: grid; gap: 7px; min-width: 0; }
 .date-field span { display: block; margin: 0; color: var(--muted); font-size: 11px; font-weight: 950; text-align: center; text-transform: uppercase; letter-spacing: .1em; }
-.date-range-controls input { width: 100%; height: 48px; padding: 0 9px; border: 1px solid rgba(114, 85, 46, .14); border-radius: 15px; background: rgba(255,250,240,.95); outline: none; box-shadow: inset 0 1px 0 rgba(255,255,255,.44); text-align: center; }
+.date-range-controls input { width: 100%; min-width: 0; height: 48px; padding: 0 6px; border: 1px solid rgba(114, 85, 46, .14); border-radius: 15px; background: rgba(255,250,240,.95); outline: none; box-shadow: inset 0 1px 0 rgba(255,255,255,.44); text-align: center; }
 .date-range-controls input:focus { border-color: rgba(49,92,72,.46); box-shadow: 0 0 0 3px rgba(49,92,72,.12); }
-.range-connector { height: 48px; display: grid; place-items: center; color: var(--green); font-size: 17px; font-weight: 950; transform: translateY(1px); }
+.range-connector { height: 48px; display: grid; place-items: center; color: var(--green); font-size: 17px; font-weight: 950; }
 .total-card { min-height: 202px; padding: 31px 30px; border: 1px solid rgba(255,255,255,.14); border-radius: 32px; background: linear-gradient(145deg, var(--green) 0%, var(--green-deep) 100%); color: #fff; display: flex; flex-direction: column; justify-content: center; box-shadow: 0 24px 54px rgba(36, 63, 47, .26), inset 0 1px 0 rgba(255,255,255,.16); overflow: hidden; position: relative; isolation: isolate; }
 .pocket-ledger-card::before { content: ""; position: absolute; inset: 13px; border: 1px solid rgba(255,255,255,.13); border-radius: 24px; background: linear-gradient(135deg, rgba(255,255,255,.14), transparent 44%); z-index: -1; }
 .total-card::after { content: ""; position: absolute; width: 210px; height: 210px; right: -66px; top: -78px; border: 42px solid rgba(255,255,255,.055); border-radius: 50%; }
