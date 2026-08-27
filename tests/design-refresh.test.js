@@ -37,3 +37,7 @@ assert.match(html, /id="moneyWheel"/, "top total card should include a category-
 assert.match(css, /\.money-wheel-card/, "money wheel card should have a dedicated circular style hook");
 assert.match(css, /\.money-wheel-center/, "money wheel should keep the total amount readable in the center");
 assert.match(js, /function categoryWheelGradient/, "category wheel should be generated from category totals");
+assert.match(css, /\.money-wheel-card \{[^}]*width:\s*min\(100%,\s*304px\)/s, "money wheel should be slimmer and less oversized");
+assert.match(css, /\.money-wheel-center \{[^}]*width:\s*82%/s, "money wheel center should be large enough to keep text comfortable");
+assert.match(css, /\.money-wheel-center \{[^}]*background:\s*rgba\(255,\s*250,\s*240,\s*\.9\)/s, "money wheel center should be light and readable");
+assert.match(css, /\.money-wheel-center \{[^}]*color:\s*var\(--ink\)/s, "money wheel center should use normal dark text instead of washed-out white text");
