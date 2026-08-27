@@ -98,9 +98,9 @@ h2 { margin-bottom: 0; font-size: 19px; letter-spacing: -.035em; }
 .money-wheel { position: absolute; inset: 0; border-radius: inherit; background: linear-gradient(145deg, rgba(255,255,255,.22), rgba(255,255,255,.06)); }
 .pocket-ledger-card::before { content: ""; position: absolute; inset: 6px; border: 1px solid rgba(255,255,255,.26); border-radius: inherit; background: transparent; z-index: 0; pointer-events: none; }
 .total-card::after { content: ""; position: absolute; inset: 14px; border: 1px solid rgba(49,92,72,.18); border-radius: inherit; pointer-events: none; }
-.money-wheel-center { position: absolute; z-index: 1; inset: 17px; padding: 18px; border: 1px solid rgba(114, 85, 46, .1); border-radius: 50%; background: rgba(255, 250, 240, .9); color: var(--ink); backdrop-filter: blur(10px); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; box-shadow: 0 10px 24px rgba(36, 63, 47, .1), inset 0 1px 0 rgba(255,255,255,.72); }
+.money-wheel-center { position: absolute; z-index: 1; inset: 17px; padding: 18px; border: 1px solid rgba(114, 85, 46, .1); border-radius: 50%; background: transparent; color: var(--ink); backdrop-filter: none; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; box-shadow: none; }
 .total-card p { width: 100%; margin: 0 0 8px; color: var(--green); font-size: 11px; line-height: 1.15; font-weight: 850; }
-.total-card strong { z-index: 1; width: 100%; color: var(--ink); font-size: clamp(32px, 8.8vw, 42px); line-height: .92; letter-spacing: -.065em; text-align: center; text-shadow: none; }
+.total-card strong { z-index: 1; width: 100%; color: var(--ink); font-size: clamp(32px, 8.8vw, 42px); line-height: .92; letter-spacing: -.065em; text-align: center; text-shadow: 0 1px 0 rgba(255,250,240,.5); }
 .total-card span { margin-top: 8px; color: var(--muted); font-size: 11px; line-height: 1.15; }
 .total-details { z-index: 1; display: grid; gap: 3px; margin-top: 10px; justify-items: center; }
 .total-details span { margin-top: 0; }
@@ -227,7 +227,7 @@ body[data-style="neon"] {
 }
 body[data-style="neon"]::before { opacity: 0; }
 body[data-style="neon"] .total-card { background: linear-gradient(145deg, #702bff 0%, #13284f 52%, #052e35 100%); box-shadow: 0 24px 58px rgba(58, 35, 140, .38), 0 0 42px rgba(108,244,210,.12); }
-body[data-style="neon"] .money-wheel-center { background: rgba(13,16,33,.82); border-color: rgba(108,244,210,.28); }
+body[data-style="neon"] .money-wheel-center { border-color: rgba(108,244,210,.28); }
 body[data-style="neon"] .pocket-ledger-card::before { border-color: rgba(108,244,210,.22); background: radial-gradient(circle, rgba(108,244,210,.18), transparent 66%); }
 body[data-style="neon"] .breakdown-row,
 body[data-style="neon"] .expense-item,
@@ -278,7 +278,7 @@ body[data-style="swiss"]::before { opacity: 0; }
 body[data-style="swiss"] h1,
 body[data-style="swiss"] h2 { letter-spacing: -.07em; }
 body[data-style="swiss"] .total-card { border-radius: 50%; background: #11110f; box-shadow: none; }
-body[data-style="swiss"] .money-wheel-center { background: rgba(17,17,15,.86); box-shadow: none; }
+body[data-style="swiss"] .money-wheel-center { box-shadow: none; }
 body[data-style="swiss"] .pocket-ledger-card::before,
 body[data-style="swiss"] .total-card::after { display: none; }
 body[data-style="swiss"] .breakdown-row,
