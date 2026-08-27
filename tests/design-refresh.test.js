@@ -23,7 +23,12 @@ assert.match(html, /data-period-mode="range"/, "overview should include a custom
 assert.match(css, /\.date-range-controls/, "custom date inputs should be styled for mobile");
 assert.match(html, /class="date-range-card"/, "custom date inputs should sit in one connected card");
 assert.match(html, /class="range-connector"/, "custom date fields should have a visual from-to connector");
-assert.match(css, /\.date-field span/, "date labels should be straight above their date inputs");
+assert.match(css, /\.date-field > span:first-child/, "date labels should be straight above their date inputs");
 assert.match(css, /grid-template-columns:\s*minmax\(0,\s*1fr\)\s+24px\s+minmax\(0,\s*1fr\)/, "date range grid should force equal flexible date fields");
-assert.match(css, /\.date-range-controls input \{[^}]*min-width:\s*0/s, "native date inputs should not overflow their grid cells");
+assert.match(css, /\.date-field input \{[^}]*min-width:\s*0/s, "native date inputs should not overflow their grid cells");
 assert.doesNotMatch(css, /\.range-connector \{[^}]*translateY/s, "range connector should not be vertically nudged off center");
+assert.match(html, /class="date-display"/, "range fields should use a custom visible date display");
+assert.match(html, /id="rangeStartDisplay"/, "from date should have centered visible text");
+assert.match(html, /id="rangeEndDisplay"/, "to date should have centered visible text");
+assert.match(css, /\.date-field input \{[^}]*opacity:\s*0/s, "native date inputs should be invisible tap targets");
+assert.match(js, /function updateRangeDisplays/, "date display text should be synced from the real inputs");

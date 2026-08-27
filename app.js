@@ -112,6 +112,10 @@ function periodLabel(period) {
   return `${formatDate(range.start)} – ${formatDate(range.end)}`;
 }
 
+function shortDateLabel(dateString) {
+  return formatDate(dateString, { day: "numeric", month: "short" });
+}
+
 function currentPeriod() {
   return periodMode === "range" ? { mode: "range", start: rangeStart, end: rangeEnd } : { mode: "month", month: selectedMonth };
 }
@@ -192,6 +196,7 @@ function render() {
   $("#monthInput").value = selectedMonth;
   $("#rangeStartInput").value = rangeStart;
   $("#rangeEndInput").value = rangeEnd;
+  updateRangeDisplays();
   $("#monthControls").hidden = periodMode !== "month";
   $("#rangeControls").hidden = periodMode !== "range";
   document.querySelectorAll("[data-period-mode]").forEach((button) => {
@@ -208,6 +213,11 @@ function render() {
   renderBreakdown(filtered, total);
   renderExpenseList($("#recentList"), filtered.slice(0, 4), periodMode === "range" ? "No expenses in this date range." : "No expenses this month. Add your first one.");
   renderHistory();
+}
+
+function updateRangeDisplays() {
+  $("#rangeStartDisplay").textContent = shortDateLabel(rangeStart);
+  $("#rangeEndDisplay").textContent = shortDateLabel(rangeEnd);
 }
 
 function breakdownMarkup(monthly, total, expandedCategories) {
