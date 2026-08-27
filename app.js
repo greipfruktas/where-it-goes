@@ -22,6 +22,9 @@ const labels = ["Must", "Work", "Family", "Treat", "Subscription"];
 let expenses = loadExpenses();
 let categories = loadCategories();
 let selectedMonth = monthKey(new Date());
+let periodMode = "month";
+let rangeStart = `${selectedMonth}-01`;
+let rangeEnd = endOfMonthString(selectedMonth);
 let selectedCategory = "Food";
 let selectedLabels = [];
 let selectedReimbursementPercent = 0;
@@ -38,6 +41,13 @@ function localDateString(date = new Date()) {
 
 function monthKey(date) {
   return localDateString(date).slice(0, 7);
+}
+
+function endOfMonthString(month) {
+  const end = new Date(`${month}-01T12:00:00`);
+  end.setMonth(end.getMonth() + 1);
+  end.setDate(0);
+  return localDateString(end);
 }
 
 function loadExpenses() {
@@ -80,6 +90,30 @@ function persistCategories() {
 
 function formatDate(dateString, options = { day: "numeric", month: "short" }) {
   return new Intl.DateTimeFormat("en-IE", options).format(new Date(`${dateString}T12:00:00`));
+}
+
+function normalizedRange(start, end) {
+  return start <= end ? { start, end } : { start: end, end: start };
+}
+
+function expensesForPeriod(items, period) {
+  if (period.mode === "range") {
+    const range = normalizedRange(period.start, period.end);
+    return items.filter((expense) => expense.date >= range.start && expense.date <= range.end);
+  }
+  return items.filter((expense) => expense.date.startsWith(period.month));
+}
+
+function periodLabel(period) {
+  if (period.mode !== "range") {
+    return new Intl.DateTimeFormat("en-IE", { month: "long", year: "numeric" }).format(new Date(`${period.month}-15T12:00:00`));
+  }
+  const range = normalizedRange(period.start, period.end);
+  return `${formatDate(range.start)} – ${formatDate(range.end)}`;
+}
+
+function currentPeriod() {
+  return periodMode === "range" ? { mode: "range", start: rangeStart, end: rangeEnd } : { mode: "month", month: selectedMonth };
 }
 
 function categoryFor(name) {
@@ -147,23 +181,32 @@ function initChoices() {
 }
 
 function render() {
-  const monthly = expenses
-    .filter((expense) => expense.date.startsWith(selectedMonth))
+  const period = currentPeriod();
+  const filtered = expensesForPeriod(expenses, period)
     .sort((a, b) => b.date.localeCompare(a.date) || b.createdAt - a.createdAt);
-  const paidTotal = monthly.reduce((sum, expense) => sum + expense.amount, 0);
-  const comingBackTotal = monthly.reduce((sum, expense) => sum + amountComingBack(expense), 0);
+  const paidTotal = filtered.reduce((sum, expense) => sum + expense.amount, 0);
+  const comingBackTotal = filtered.reduce((sum, expense) => sum + amountComingBack(expense), 0);
   const total = paidTotal - comingBackTotal;
-  const monthDate = new Date(`${selectedMonth}-15T12:00:00`);
 
-  $("#monthLabel").textContent = new Intl.DateTimeFormat("en-IE", { month: "long", year: "numeric" }).format(monthDate);
+  $("#monthLabel").textContent = periodLabel({ mode: "month", month: selectedMonth });
   $("#monthInput").value = selectedMonth;
+  $("#rangeStartInput").value = rangeStart;
+  $("#rangeEndInput").value = rangeEnd;
+  $("#monthControls").hidden = periodMode !== "month";
+  $("#rangeControls").hidden = periodMode !== "range";
+  document.querySelectorAll("[data-period-mode]").forEach((button) => {
+    const selected = button.dataset.periodMode === periodMode;
+    button.classList.toggle("selected", selected);
+    button.setAttribute("aria-pressed", String(selected));
+  });
+  $("#periodTotalLabel").textContent = periodMode === "range" ? `Your share · ${periodLabel(period)}` : "Your share this month";
   $("#monthTotal").textContent = money.format(total);
-  $("#expenseCount").textContent = monthly.length ? `${monthly.length} expense${monthly.length === 1 ? "" : "s"} recorded` : "No expenses yet";
+  $("#expenseCount").textContent = filtered.length ? `${filtered.length} expense${filtered.length === 1 ? "" : "s"} recorded` : "No expenses yet";
   $("#reimbursementSummary").hidden = comingBackTotal === 0;
   $("#reimbursementSummary").textContent = `${money.format(paidTotal)} paid · ${money.format(comingBackTotal)} coming back`;
 
-  renderBreakdown(monthly, total);
-  renderExpenseList($("#recentList"), monthly.slice(0, 4), "No expenses this month. Add your first one.");
+  renderBreakdown(filtered, total);
+  renderExpenseList($("#recentList"), filtered.slice(0, 4), periodMode === "range" ? "No expenses in this date range." : "No expenses this month. Add your first one.");
   renderHistory();
 }
 
@@ -463,6 +506,22 @@ $("#previousMonth").addEventListener("click", () => changeMonth(-1));
 $("#nextMonth").addEventListener("click", () => changeMonth(1));
 $("#monthLabel").addEventListener("click", () => $("#monthInput").showPicker?.());
 $("#monthInput").addEventListener("change", (event) => { if (event.target.value) { selectedMonth = event.target.value; render(); } });
+document.querySelectorAll("[data-period-mode]").forEach((button) => {
+  button.addEventListener("click", () => {
+    periodMode = button.dataset.periodMode;
+    render();
+  });
+});
+$("#rangeStartInput").addEventListener("change", (event) => {
+  if (!event.target.value) return;
+  rangeStart = event.target.value;
+  render();
+});
+$("#rangeEndInput").addEventListener("change", (event) => {
+  if (!event.target.value) return;
+  rangeEnd = event.target.value;
+  render();
+});
 $("#searchInput").addEventListener("input", renderHistory);
 $("#exportButton").addEventListener("click", (event) => {
   event.stopPropagation();

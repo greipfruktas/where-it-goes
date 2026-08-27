@@ -17,3 +17,7 @@ assert.match(css, /body\[data-style="neon"\]/, "Option B should have a Neon Nigh
 assert.match(css, /body\[data-style="swiss"\]/, "Option C should have a Minimal Swiss theme hook");
 assert.match(js, /STYLE_KEY/, "selected style should be saved separately from expenses");
 assert.match(js, /function applyAppStyle/, "style selection should be applied through a named helper");
+assert.match(html, /id="rangeStartInput"/, "overview should include a from-date input");
+assert.match(html, /id="rangeEndInput"/, "overview should include a to-date input");
+assert.match(html, /data-period-mode="range"/, "overview should include a custom dates mode");
+assert.match(css, /\.date-range-controls/, "custom date inputs should be styled for mobile");

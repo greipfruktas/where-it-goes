@@ -71,12 +71,22 @@ h2 { margin-bottom: 0; font-size: 19px; letter-spacing: -.035em; }
 .view { display: none; }
 .view.active { display: block; animation: appear .18s ease-out; }
 @keyframes appear { from { opacity: 0; transform: translateY(4px); } }
-.month-picker { position: relative; display: flex; align-items: center; justify-content: center; gap: 3px; margin-bottom: 16px; }
+.period-controls { display: grid; gap: 10px; margin-bottom: 16px; }
+.period-switch { height: 42px; padding: 4px; border: 1px solid rgba(109, 86, 52, .14); border-radius: 999px; background: rgba(255,250,240,.58); display: grid; grid-template-columns: 1fr 1fr; gap: 4px; box-shadow: inset 0 1px 0 rgba(255,255,255,.42); }
+.period-switch button { border: 0; border-radius: 999px; background: transparent; color: var(--muted); font-size: 12px; font-weight: 900; }
+.period-switch button.selected { background: var(--card); color: var(--green); box-shadow: 0 7px 16px rgba(87, 62, 34, .08); }
+.period-switch button:active { transform: var(--pressed); }
+.month-picker { position: relative; display: flex; align-items: center; justify-content: center; gap: 3px; }
+.month-picker[hidden], .date-range-controls[hidden] { display: none; }
 .month-picker button { border: 0; background: transparent; }
 .month-picker > button:not(.month-label) { width: 40px; height: 36px; color: var(--muted); font-size: 28px; }
 .month-label { min-width: 166px; height: 38px; border-radius: 999px; color: var(--green-deep); font-weight: 900; letter-spacing: -.01em; }
 .month-label:active { background: rgba(255,250,240,.56); transform: var(--pressed); }
 #monthInput { position: absolute; width: 150px; height: 36px; opacity: 0; pointer-events: none; }
+.date-range-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.date-range-controls label > span { display: block; margin: 0 0 6px 2px; color: var(--muted); font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: .08em; }
+.date-range-controls input { width: 100%; height: 48px; padding: 0 12px; border: 1px solid rgba(114, 85, 46, .14); border-radius: 15px; background: rgba(255,250,240,.9); outline: none; box-shadow: inset 0 1px 0 rgba(255,255,255,.44); }
+.date-range-controls input:focus { border-color: rgba(49,92,72,.46); box-shadow: 0 0 0 3px rgba(49,92,72,.12); }
 .total-card { min-height: 202px; padding: 31px 30px; border: 1px solid rgba(255,255,255,.14); border-radius: 32px; background: linear-gradient(145deg, var(--green) 0%, var(--green-deep) 100%); color: #fff; display: flex; flex-direction: column; justify-content: center; box-shadow: 0 24px 54px rgba(36, 63, 47, .26), inset 0 1px 0 rgba(255,255,255,.16); overflow: hidden; position: relative; isolation: isolate; }
 .pocket-ledger-card::before { content: ""; position: absolute; inset: 13px; border: 1px solid rgba(255,255,255,.13); border-radius: 24px; background: linear-gradient(135deg, rgba(255,255,255,.14), transparent 44%); z-index: -1; }
 .total-card::after { content: ""; position: absolute; width: 210px; height: 210px; right: -66px; top: -78px; border: 42px solid rgba(255,255,255,.055); border-radius: 50%; }
@@ -222,6 +232,9 @@ body[data-style="neon"] .popup-menu,
 body[data-style="neon"] .icon-button,
 body[data-style="neon"] .close-button,
 body[data-style="neon"] .style-button { background: rgba(24,29,53,.86); border-color: rgba(135,150,230,.2); color: var(--ink); }
+body[data-style="neon"] .period-switch,
+body[data-style="neon"] .date-range-controls input { background: rgba(24,29,53,.86); border-color: rgba(135,150,230,.2); color: var(--ink); }
+body[data-style="neon"] .period-switch button.selected { background: rgba(108,244,210,.14); color: var(--green); }
 body[data-style="neon"] .sheet { background: linear-gradient(180deg, #181d35, #101426); }
 body[data-style="neon"] .save-button,
 body[data-style="neon"] .style-button b { background: linear-gradient(145deg, #6cf4d2, #9b7cff); color: #0d1021; }
@@ -269,6 +282,9 @@ body[data-style="swiss"] .popup-menu,
 body[data-style="swiss"] .icon-button,
 body[data-style="swiss"] .close-button,
 body[data-style="swiss"] .style-button { border-radius: 8px; background: rgba(255,255,255,.92); box-shadow: none; }
+body[data-style="swiss"] .period-switch,
+body[data-style="swiss"] .date-range-controls input { border-radius: 8px; background: rgba(255,255,255,.92); box-shadow: none; }
+body[data-style="swiss"] .period-switch button { border-radius: 6px; }
 body[data-style="swiss"] .category-icon { border-radius: 6px; }
 body[data-style="swiss"] .sheet { border-radius: 12px 12px 0 0; background: var(--paper); }
 body[data-style="swiss"] .save-button,

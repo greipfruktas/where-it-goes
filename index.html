@@ -45,15 +45,31 @@
 
       <main>
         <section id="overviewView" class="view active" aria-labelledby="overviewTab">
-          <div class="month-picker">
-            <button id="previousMonth" aria-label="Previous month">‹</button>
-            <button id="monthLabel" class="month-label" aria-label="Choose month"></button>
-            <button id="nextMonth" aria-label="Next month">›</button>
-            <input id="monthInput" type="month" aria-label="Month" />
+          <div class="period-controls">
+            <div class="period-switch" role="group" aria-label="Choose date period">
+              <button id="monthModeButton" type="button" class="selected" data-period-mode="month">Month</button>
+              <button id="rangeModeButton" type="button" data-period-mode="range">Custom dates</button>
+            </div>
+            <div id="monthControls" class="month-picker">
+              <button id="previousMonth" aria-label="Previous month">‹</button>
+              <button id="monthLabel" class="month-label" aria-label="Choose month"></button>
+              <button id="nextMonth" aria-label="Next month">›</button>
+              <input id="monthInput" type="month" aria-label="Month" />
+            </div>
+            <div id="rangeControls" class="date-range-controls" hidden>
+              <label>
+                <span>From</span>
+                <input id="rangeStartInput" type="date" />
+              </label>
+              <label>
+                <span>To</span>
+                <input id="rangeEndInput" type="date" />
+              </label>
+            </div>
           </div>
 
           <article class="total-card pocket-ledger-card">
-            <p>Your share this month</p>
+            <p id="periodTotalLabel">Your share this month</p>
             <strong id="monthTotal">€0.00</strong>
             <div class="total-details">
               <span id="expenseCount">No expenses yet</span>
