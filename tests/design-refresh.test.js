@@ -21,3 +21,6 @@ assert.match(html, /id="rangeStartInput"/, "overview should include a from-date 
 assert.match(html, /id="rangeEndInput"/, "overview should include a to-date input");
 assert.match(html, /data-period-mode="range"/, "overview should include a custom dates mode");
 assert.match(css, /\.date-range-controls/, "custom date inputs should be styled for mobile");
+assert.match(html, /class="date-range-card"/, "custom date inputs should sit in one connected card");
+assert.match(html, /class="range-connector"/, "custom date fields should have a visual from-to connector");
+assert.match(css, /\.date-field span/, "date labels should be straight above their date inputs");

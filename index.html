@@ -57,14 +57,17 @@
               <input id="monthInput" type="month" aria-label="Month" />
             </div>
             <div id="rangeControls" class="date-range-controls" hidden>
-              <label>
-                <span>From</span>
-                <input id="rangeStartInput" type="date" />
-              </label>
-              <label>
-                <span>To</span>
-                <input id="rangeEndInput" type="date" />
-              </label>
+              <div class="date-range-card">
+                <label class="date-field">
+                  <span>From</span>
+                  <input id="rangeStartInput" type="date" />
+                </label>
+                <div class="range-connector" aria-hidden="true">→</div>
+                <label class="date-field">
+                  <span>To</span>
+                  <input id="rangeEndInput" type="date" />
+                </label>
+              </div>
             </div>
           </div>
 
