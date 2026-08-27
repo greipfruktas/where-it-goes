@@ -29,7 +29,6 @@ let selectedCategory = "Food";
 let selectedLabels = [];
 let selectedReimbursementPercent = 0;
 let expandedBreakdownCategories = new Set();
-let breakdownView = "list";
 let selectedStyle = loadStyle();
 
 const $ = (selector) => document.querySelector(selector);
@@ -221,7 +220,7 @@ function updateRangeDisplays() {
   $("#rangeEndDisplay").textContent = shortDateLabel(rangeEnd);
 }
 
-function categoryTotals(monthly, total) {
+function breakdownMarkup(monthly, total, expandedCategories) {
   const totals = monthly.reduce((map, expense) => {
     map[expense.category] = (map[expense.category] || 0) + yourShare(expense);
     return map;
@@ -230,21 +229,12 @@ function categoryTotals(monthly, total) {
     map[expense.category] = [...(map[expense.category] || []), expense];
     return map;
   }, {});
-  return Object.entries(totals)
-    .sort((a, b) => b[1] - a[1])
-    .map(([name, amount]) => ({
-      name,
-      amount,
-      category: categoryFor(name),
-      percent: total ? Math.round((amount / total) * 100) : 0,
-      expenses: expensesByCategory[name] || []
-    }));
-}
-
-function breakdownMarkup(monthly, total, expandedCategories) {
-  const rows = categoryTotals(monthly, total);
-  return rows.length ? rows.map(({ name, amount, category, percent, expenses }) => {
+  const rows = Object.entries(totals).sort((a, b) => b[1] - a[1]);
+  return rows.length ? rows.map(([name, amount]) => {
+    const category = categoryFor(name);
+    const percent = total ? Math.round((amount / total) * 100) : 0;
     const expanded = expandedCategories.has(name);
+    const expenses = expensesByCategory[name] || [];
     return `<div class="breakdown-group${expanded ? " open" : ""}">
       <button class="breakdown-row" type="button" data-breakdown-category="${escapeHTML(name)}" aria-expanded="${expanded}">
         <div class="category-icon" style="background:${category.color}">${category.emoji}</div>
@@ -257,57 +247,8 @@ function breakdownMarkup(monthly, total, expandedCategories) {
   }).join("") : `<div class="empty-state">Your category breakdown will appear here.</div>`;
 }
 
-function polarPoint(center, radius, angle) {
-  const radians = (angle - 90) * Math.PI / 180;
-  return {
-    x: center + radius * Math.cos(radians),
-    y: center + radius * Math.sin(radians)
-  };
-}
-
-function pieSlicePath(startAngle, endAngle) {
-  const center = 60;
-  const radius = 52;
-  const start = polarPoint(center, radius, startAngle);
-  const end = polarPoint(center, radius, endAngle);
-  const largeArc = endAngle - startAngle > 180 ? 1 : 0;
-  return `M ${center} ${center} L ${start.x.toFixed(2)} ${start.y.toFixed(2)} A ${radius} ${radius} 0 ${largeArc} 1 ${end.x.toFixed(2)} ${end.y.toFixed(2)} Z`;
-}
-
-function pieChartMarkup(monthly, total) {
-  const rows = categoryTotals(monthly, total).filter((row) => row.amount > 0);
-  if (!rows.length) return `<div class="empty-state">Your category breakdown will appear here.</div>`;
-  let angle = 0;
-  const slices = rows.map((row, index) => {
-    const nextAngle = index === rows.length - 1 ? 359.99 : angle + (row.amount / total) * 360;
-    const path = pieSlicePath(angle, nextAngle);
-    angle = nextAngle;
-    return `<path class="pie-slice" d="${path}" fill="${row.category.color}" stroke="var(--card)" stroke-width="1.4">
-      <title>${escapeHTML(row.name)} · ${money.format(row.amount)} · ${row.percent}%</title>
-    </path>`;
-  }).join("");
-  const legend = rows.map((row) => `
-    <div class="pie-legend-row">
-      <span class="pie-swatch" style="background:${row.category.color}">${escapeHTML(row.category.emoji)}</span>
-      <span class="pie-legend-name">${escapeHTML(row.name)}</span>
-      <strong>${money.format(row.amount)}</strong>
-      <em>${row.percent}%</em>
-    </div>`).join("");
-  return `<div class="pie-card">
-    <div class="pie-chart-wrap">
-      <svg class="pie-chart" viewBox="0 0 120 120" role="img" aria-label="Category pie chart">${slices}</svg>
-    </div>
-    <div class="pie-legend">${legend}</div>
-  </div>`;
-}
-
 function renderBreakdown(monthly, total) {
-  $("#breakdown").innerHTML = breakdownView === "pie" ? pieChartMarkup(monthly, total) : breakdownMarkup(monthly, total, expandedBreakdownCategories);
-  document.querySelectorAll("[data-breakdown-view]").forEach((button) => {
-    const selected = button.dataset.breakdownView === breakdownView;
-    button.classList.toggle("selected", selected);
-    button.setAttribute("aria-pressed", String(selected));
-  });
+  $("#breakdown").innerHTML = breakdownMarkup(monthly, total, expandedBreakdownCategories);
 }
 
 function expenseMarkup(expense) {
@@ -560,12 +501,6 @@ $("#deleteButton").addEventListener("click", () => {
 document.addEventListener("click", (event) => {
   const expenseButton = event.target.closest("[data-expense-id]");
   if (expenseButton) openSheet(expenses.find((item) => item.id === expenseButton.dataset.expenseId));
-  const breakdownViewButton = event.target.closest("[data-breakdown-view]");
-  if (breakdownViewButton) {
-    breakdownView = breakdownViewButton.dataset.breakdownView;
-    render();
-    return;
-  }
   const breakdownButton = event.target.closest("[data-breakdown-category]");
   if (breakdownButton) {
     const category = breakdownButton.dataset.breakdownCategory;
