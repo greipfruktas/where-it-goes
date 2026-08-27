@@ -37,7 +37,11 @@ assert.match(html, /id="moneyWheel"/, "top total card should include a category-
 assert.match(css, /\.money-wheel-card/, "money wheel card should have a dedicated circular style hook");
 assert.match(css, /\.money-wheel-center/, "money wheel should keep the total amount readable in the center");
 assert.match(js, /function categoryWheelGradient/, "category wheel should be generated from category totals");
-assert.match(css, /\.money-wheel-card \{[^}]*width:\s*min\(100%,\s*304px\)/s, "money wheel should be slimmer and less oversized");
-assert.match(css, /\.money-wheel-center \{[^}]*width:\s*82%/s, "money wheel center should be large enough to keep text comfortable");
+assert.match(css, /\.money-wheel-card \{[^}]*width:\s*min\(100%,\s*292px\)/s, "money wheel should be slimmer and less oversized");
+assert.match(css, /\.money-wheel-center \{[^}]*position:\s*absolute/s, "money wheel center should be positioned by inset so it cannot shrink around text");
+assert.match(css, /\.money-wheel-center \{[^}]*inset:\s*17px/s, "money wheel center should make the category ring narrow");
 assert.match(css, /\.money-wheel-center \{[^}]*background:\s*rgba\(255,\s*250,\s*240,\s*\.9\)/s, "money wheel center should be light and readable");
 assert.match(css, /\.money-wheel-center \{[^}]*color:\s*var\(--ink\)/s, "money wheel center should use normal dark text instead of washed-out white text");
+assert.match(css, /\.money-wheel-center \{[^}]*display:\s*flex/s, "money wheel center text should be vertically centered as a single stack");
+assert.match(js, /rangeStartInput"\)\.addEventListener\("input", updateRangeStart\)/, "from-date changes should update immediately on mobile input events");
+assert.match(js, /rangeEndInput"\)\.addEventListener\("input", updateRangeEnd\)/, "to-date changes should update immediately on mobile input events");

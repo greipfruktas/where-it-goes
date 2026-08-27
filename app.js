@@ -204,11 +204,11 @@ function render() {
     button.classList.toggle("selected", selected);
     button.setAttribute("aria-pressed", String(selected));
   });
-  $("#periodTotalLabel").textContent = periodMode === "range" ? `Your share · ${periodLabel(period)}` : "Your share this month";
+  $("#periodTotalLabel").textContent = "Your share";
   $("#monthTotal").textContent = money.format(total);
-  $("#expenseCount").textContent = filtered.length ? `${filtered.length} expense${filtered.length === 1 ? "" : "s"} recorded` : "No expenses yet";
+  $("#expenseCount").textContent = filtered.length ? `${filtered.length} entr${filtered.length === 1 ? "y" : "ies"}` : "No entries yet";
   $("#reimbursementSummary").hidden = comingBackTotal === 0;
-  $("#reimbursementSummary").textContent = `${money.format(paidTotal)} paid · ${money.format(comingBackTotal)} coming back`;
+  $("#reimbursementSummary").textContent = `${money.format(comingBackTotal)} back`;
   $("#moneyWheel").style.background = categoryWheelGradient(filtered, total);
 
   renderBreakdown(filtered, total);
@@ -545,16 +545,22 @@ document.querySelectorAll("[data-period-mode]").forEach((button) => {
     render();
   });
 });
-$("#rangeStartInput").addEventListener("change", (event) => {
+function updateRangeStart(event) {
   if (!event.target.value) return;
   rangeStart = event.target.value;
   render();
-});
-$("#rangeEndInput").addEventListener("change", (event) => {
+}
+
+function updateRangeEnd(event) {
   if (!event.target.value) return;
   rangeEnd = event.target.value;
   render();
-});
+}
+
+$("#rangeStartInput").addEventListener("input", updateRangeStart);
+$("#rangeStartInput").addEventListener("change", updateRangeStart);
+$("#rangeEndInput").addEventListener("input", updateRangeEnd);
+$("#rangeEndInput").addEventListener("change", updateRangeEnd);
 $("#searchInput").addEventListener("input", renderHistory);
 $("#exportButton").addEventListener("click", (event) => {
   event.stopPropagation();
