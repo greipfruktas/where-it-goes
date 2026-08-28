@@ -256,51 +256,7 @@ function categoryWheelGradient(monthly, total) {
 
 function wheelColor(color) {
   if (!/^#[0-9a-f]{6}$/i.test(color)) return color;
-  const [red, green, blue] = [1, 3, 5].map((index) => Number.parseInt(color.slice(index, index + 2), 16));
-  const [hue, saturation, lightness] = rgbToHsl(red, green, blue);
-  return hslToHex(hue, Math.max(saturation, 0.72), Math.min(lightness, 0.48));
-}
-
-function rgbToHsl(red, green, blue) {
-  const r = red / 255;
-  const g = green / 255;
-  const b = blue / 255;
-  const max = Math.max(r, g, b);
-  const min = Math.min(r, g, b);
-  const lightness = (max + min) / 2;
-
-  if (max === min) return [0, 0, lightness];
-
-  const delta = max - min;
-  const saturation = lightness > 0.5 ? delta / (2 - max - min) : delta / (max + min);
-  let hue = 0;
-  if (max === r) hue = (g - b) / delta + (g < b ? 6 : 0);
-  if (max === g) hue = (b - r) / delta + 2;
-  if (max === b) hue = (r - g) / delta + 4;
-
-  return [hue / 6, saturation, lightness];
-}
-
-function hslToHex(hue, saturation, lightness) {
-  const hueToRgb = (start, end, amount) => {
-    let t = amount;
-    if (t < 0) t += 1;
-    if (t > 1) t -= 1;
-    if (t < 1 / 6) return start + (end - start) * 6 * t;
-    if (t < 1 / 2) return end;
-    if (t < 2 / 3) return start + (end - start) * (2 / 3 - t) * 6;
-    return start;
-  };
-
-  const end = lightness < 0.5 ? lightness * (1 + saturation) : lightness + saturation - lightness * saturation;
-  const start = 2 * lightness - end;
-  const channels = [
-    hueToRgb(start, end, hue + 1 / 3),
-    hueToRgb(start, end, hue),
-    hueToRgb(start, end, hue - 1 / 3)
-  ];
-
-  return `#${channels.map((channel) => Math.round(channel * 255).toString(16).padStart(2, "0")).join("")}`;
+  return color.toLowerCase();
 }
 
 function breakdownMarkup(monthly, total, expandedCategories) {

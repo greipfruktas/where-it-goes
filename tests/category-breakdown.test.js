@@ -66,8 +66,8 @@ assert.equal(categoryRows[1].amount, 4.5);
 
 const wheelGradient = sandbox.__test.categoryWheelGradient(august, 9.5);
 assert.match(wheelGradient, /^conic-gradient\(/);
-assert.match(wheelGradient, /#2294d3 0% 52\.63%/);
-assert.match(wheelGradient, /#6bd322 52\.63% 100%/);
+assert.match(wheelGradient, /#dfeaf0 0% 52\.63%/);
+assert.match(wheelGradient, /#e6f0df 52\.63% 100%/);
 
 const expanded = sandbox.__test.breakdownMarkup(monthly, 9.5, new Set(["Food"]));
 assert.match(expanded, /data-breakdown-category="Food"/);
