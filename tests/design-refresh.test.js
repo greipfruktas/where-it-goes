@@ -42,6 +42,8 @@ assert.match(css, /\.money-wheel-card \{[^}]*background:\s*transparent/s, "money
 assert.match(css, /\.money-wheel-center \{[^}]*position:\s*absolute/s, "money wheel center should be positioned by inset so it cannot shrink around text");
 assert.match(css, /\.money-wheel-center \{[^}]*inset:\s*17px/s, "money wheel center should make the category ring narrow");
 assert.match(css, /\.money-wheel \{[^}]*mask:\s*radial-gradient/s, "category colors should be clipped to the band between the inner and outer circle lines");
+assert.match(css, /\.money-wheel \{[^}]*mask:\s*radial-gradient\(circle closest-side/s, "category band mask should measure from the circle edge, not the square corner");
+assert.match(css, /\.money-wheel \{[^}]*#fff calc\(100% - 17px\) 100%/s, "category band mask should use white for the visible ring so Safari renders the colors");
 assert.match(css, /\.money-wheel-center \{[^}]*background:\s*transparent/s, "money wheel center should be transparent so category colors remain visible");
 assert.match(css, /\.money-wheel-center \{[^}]*border:\s*0/s, "transparent center should not draw a third circle outline");
 assert.match(css, /\.money-wheel-center \{[^}]*color:\s*var\(--ink\)/s, "money wheel center should use normal dark text instead of washed-out white text");
