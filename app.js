@@ -249,9 +249,14 @@ function categoryWheelGradient(monthly, total) {
     const start = cursor;
     const end = index === rows.length - 1 ? 100 : cursor + (row.amount / total) * 100;
     cursor = end;
-    return `${row.category.color} ${start.toFixed(2).replace(/\.00$/, "")}% ${end.toFixed(2).replace(/\.00$/, "")}%`;
+    return `${wheelColor(row.category.color)} ${start.toFixed(2).replace(/\.00$/, "")}% ${end.toFixed(2).replace(/\.00$/, "")}%`;
   });
   return `conic-gradient(${stops.join(", ")})`;
+}
+
+function wheelColor(color) {
+  if (!/^#[0-9a-f]{6}$/i.test(color)) return color;
+  return color.toLowerCase();
 }
 
 function breakdownMarkup(monthly, total, expandedCategories) {
