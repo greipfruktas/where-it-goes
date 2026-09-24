@@ -1,4 +1,24 @@
-create extension if not exists pgcrypto;
+create schema if not exists extensions;
+create extension if not exists pgcrypto with schema extensions;
+
+-- Supabase normally installs pgcrypto in `extensions`. If it already exists in
+-- another schema, relocate it so schema-qualified calls below remain portable.
+do $$
+declare
+  v_extension_schema text;
+begin
+  select n.nspname into v_extension_schema
+  from pg_extension as e
+  join pg_namespace as n on n.oid = e.extnamespace
+  where e.extname = 'pgcrypto';
+
+  if v_extension_schema is distinct from 'extensions' then
+    alter extension pgcrypto set schema extensions;
+  end if;
+end;
+$$;
+
+grant usage on schema extensions to authenticated;
 
 create table public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
@@ -151,6 +171,31 @@ for each row execute function public.set_updated_at();
 create trigger group_repayments_set_updated_at
 before update on public.group_repayments
 for each row execute function public.set_updated_at();
+
+create or replace function public.protect_current_owner_membership()
+returns trigger
+language plpgsql
+set search_path = public
+as $$
+begin
+  if exists (
+    select 1 from public.groups as g
+    where g.id = old.group_id and g.owner_id = old.user_id
+  ) and (
+    tg_op = 'DELETE'
+    or new.status <> 'active'
+    or new.role <> 'owner'
+  ) then
+    raise exception 'Transfer ownership before removing or demoting the owner'
+      using errcode = '22023';
+  end if;
+  return coalesce(new, old);
+end;
+$$;
+
+create trigger group_members_protect_current_owner
+before update or delete on public.group_members
+for each row execute function public.protect_current_owner_membership();
 
 create or replace function public.protect_group_currency()
 returns trigger
@@ -477,81 +522,9 @@ create policy "active members create financial entries through rpc"
 on public.group_expenses for insert to authenticated
 with check (false);
 
-create policy "creators or owners update expenses"
-on public.group_expenses for update to authenticated
-using (
-  public.is_active_group_member(group_id)
-  and (created_by = auth.uid() or public.is_group_owner(group_id))
-)
-with check (
-  public.is_active_group_member(group_id)
-  and (created_by = auth.uid() or public.is_group_owner(group_id))
-  and exists (
-    select 1 from public.groups as g
-    where g.id = group_id and g.status = 'active' and g.archived_at is null
-  )
-);
-
 create policy "active members read expense shares"
 on public.expense_participants for select to authenticated
 using (public.is_active_group_member(group_id));
-
-create policy "creators or owners insert expense shares"
-on public.expense_participants for insert to authenticated
-with check (
-  public.is_active_group_member(group_id)
-  and exists (
-    select 1
-    from public.group_expenses as ge
-    join public.groups as g on g.id = ge.group_id
-    where ge.id = expense_id
-      and ge.group_id = group_id
-      and (ge.created_by = auth.uid() or public.is_group_owner(ge.group_id))
-      and g.status = 'active'
-      and g.archived_at is null
-  )
-);
-
-create policy "creators or owners update expense shares"
-on public.expense_participants for update to authenticated
-using (
-  public.is_active_group_member(group_id)
-  and exists (
-    select 1 from public.group_expenses as ge
-    where ge.id = expense_id
-      and ge.group_id = group_id
-      and (ge.created_by = auth.uid() or public.is_group_owner(ge.group_id))
-  )
-)
-with check (
-  public.is_active_group_member(group_id)
-  and exists (
-    select 1
-    from public.group_expenses as ge
-    join public.groups as g on g.id = ge.group_id
-    where ge.id = expense_id
-      and ge.group_id = group_id
-      and (ge.created_by = auth.uid() or public.is_group_owner(ge.group_id))
-      and g.status = 'active'
-      and g.archived_at is null
-  )
-);
-
-create policy "creators or owners delete expense shares"
-on public.expense_participants for delete to authenticated
-using (
-  public.is_active_group_member(group_id)
-  and exists (
-    select 1
-    from public.group_expenses as ge
-    join public.groups as g on g.id = ge.group_id
-    where ge.id = expense_id
-      and ge.group_id = group_id
-      and (ge.created_by = auth.uid() or public.is_group_owner(ge.group_id))
-      and g.status = 'active'
-      and g.archived_at is null
-  )
-);
 
 create policy "active members read repayments"
 on public.group_repayments for select to authenticated
@@ -596,7 +569,7 @@ begin
   into v_group_id
   from public.group_invites as gi
   join public.groups as g on g.id = gi.group_id
-  where gi.token_hash = digest(p_token, 'sha256')
+  where gi.token_hash = extensions.digest(p_token, 'sha256')
     and gi.is_active = true
     and gi.revoked_at is null
     and gi.expires_at > now()
@@ -616,6 +589,111 @@ begin
       updated_at = now();
 
   return v_group_id;
+end;
+$$;
+
+-- Validate the authoritative equal split used by both expense create and edit.
+-- Remainder minor units go to the lowest member UUIDs, matching domain.js.
+create or replace function public.assert_valid_equal_expense_draft(
+  p_group_id uuid,
+  p_amount_minor bigint,
+  p_payer_id uuid,
+  p_shares jsonb
+)
+returns void
+language plpgsql
+set search_path = public
+as $$
+declare
+  v_share_count integer;
+  v_distinct_count integer;
+  v_active_count integer;
+  v_share_total bigint;
+begin
+  if p_amount_minor is null or p_amount_minor <= 0 then
+    raise exception 'Amount must be greater than zero' using errcode = '22023';
+  end if;
+  if jsonb_typeof(p_shares) <> 'array' or jsonb_array_length(p_shares) = 0 then
+    raise exception 'At least one participant share is required' using errcode = '22023';
+  end if;
+
+  select
+    count(*),
+    count(distinct (share ->> 'member_id')::uuid),
+    coalesce(sum((share ->> 'share_minor')::bigint), 0)
+  into v_share_count, v_distinct_count, v_share_total
+  from jsonb_array_elements(p_shares) as items(share);
+
+  if v_share_count <> v_distinct_count then
+    raise exception 'Participant members must be unique' using errcode = '22023';
+  end if;
+  if v_share_total <> p_amount_minor then
+    raise exception 'Participant shares must total the expense amount' using errcode = '22023';
+  end if;
+  if exists (
+    select 1
+    from jsonb_array_elements(p_shares) as items(share)
+    where (share ->> 'share_minor')::bigint <= 0
+  ) then
+    raise exception 'Participant shares must be greater than zero' using errcode = '22023';
+  end if;
+
+  if exists (
+    with submitted as (
+      select
+        (share ->> 'member_id')::uuid as member_id,
+        (share ->> 'share_minor')::bigint as share_minor
+      from jsonb_array_elements(p_shares) as items(share)
+    ), ranked as (
+      select
+        member_id,
+        share_minor,
+        row_number() over (order by member_id) as split_rank,
+        count(*) over () as participant_count
+      from submitted
+    )
+    select 1
+    from ranked
+    where share_minor <> (
+      p_amount_minor / participant_count
+      + case when split_rank <= p_amount_minor % participant_count then 1 else 0 end
+    )
+  ) then
+    raise exception 'Participant shares must match the deterministic equal split'
+      using errcode = '22023';
+  end if;
+
+  -- Lock every referenced membership so removal cannot race validation.
+  perform 1
+  from public.group_members as gm
+  where gm.group_id = p_group_id
+    and gm.user_id in (
+      select (share ->> 'member_id')::uuid
+      from jsonb_array_elements(p_shares) as items(share)
+      union
+      select p_payer_id
+    )
+  for share;
+
+  select count(*) into v_active_count
+  from public.group_members as gm
+  where gm.group_id = p_group_id
+    and gm.status = 'active'
+    and gm.user_id in (
+      select (share ->> 'member_id')::uuid
+      from jsonb_array_elements(p_shares) as items(share)
+    );
+  if v_active_count <> v_share_count then
+    raise exception 'All participants must be active group members' using errcode = '22023';
+  end if;
+  if not exists (
+    select 1 from public.group_members as gm
+    where gm.group_id = p_group_id
+      and gm.user_id = p_payer_id
+      and gm.status = 'active'
+  ) then
+    raise exception 'Payer must be an active group member' using errcode = '22023';
+  end if;
 end;
 $$;
 
@@ -640,10 +718,6 @@ declare
   v_shares jsonb := payload -> 'participant_shares';
   v_group public.groups%rowtype;
   v_expense public.group_expenses%rowtype;
-  v_share_count integer;
-  v_distinct_count integer;
-  v_active_count integer;
-  v_share_total bigint;
 begin
   if v_actor_id is null then
     raise exception 'Authentication required' using errcode = '42501';
@@ -680,70 +754,18 @@ begin
     return v_expense;
   end if;
 
-  if v_amount_minor is null or v_amount_minor <= 0 then
-    raise exception 'Amount must be greater than zero' using errcode = '22023';
-  end if;
   if v_description is null or v_category is null or v_expense_date is null then
     raise exception 'Description, category, and date are required' using errcode = '22023';
   end if;
   if payload ? 'currency' and payload ->> 'currency' <> v_group.currency then
     raise exception 'Currency must match the group currency' using errcode = '22023';
   end if;
-  if jsonb_typeof(v_shares) <> 'array' or jsonb_array_length(v_shares) = 0 then
-    raise exception 'At least one participant share is required' using errcode = '22023';
-  end if;
-
-  select
-    count(*),
-    count(distinct (share ->> 'member_id')::uuid),
-    coalesce(sum((share ->> 'share_minor')::bigint), 0)
-  into v_share_count, v_distinct_count, v_share_total
-  from jsonb_array_elements(v_shares) as items(share);
-
-  if v_share_count <> v_distinct_count then
-    raise exception 'Participant members must be unique' using errcode = '22023';
-  end if;
-  if v_share_total <> v_amount_minor then
-    raise exception 'Participant shares must total the expense amount' using errcode = '22023';
-  end if;
-  if exists (
-    select 1
-    from jsonb_array_elements(v_shares) as items(share)
-    where (share ->> 'share_minor')::bigint <= 0
-  ) then
-    raise exception 'Participant shares must be greater than zero' using errcode = '22023';
-  end if;
-
-  perform 1
-  from public.group_members as gm
-  where gm.group_id = v_group_id
-    and gm.user_id in (
-      select (share ->> 'member_id')::uuid
-      from jsonb_array_elements(v_shares) as items(share)
-      union
-      select v_payer_id
-    )
-  for share;
-
-  select count(*) into v_active_count
-  from public.group_members as gm
-  where gm.group_id = v_group_id
-    and gm.status = 'active'
-    and gm.user_id in (
-      select (share ->> 'member_id')::uuid
-      from jsonb_array_elements(v_shares) as items(share)
-    );
-  if v_active_count <> v_share_count then
-    raise exception 'All participants must be active group members' using errcode = '22023';
-  end if;
-  if not exists (
-    select 1 from public.group_members as gm
-    where gm.group_id = v_group_id
-      and gm.user_id = v_payer_id
-      and gm.status = 'active'
-  ) then
-    raise exception 'Payer must be an active group member' using errcode = '22023';
-  end if;
+  perform public.assert_valid_equal_expense_draft(
+    v_group_id,
+    v_amount_minor,
+    v_payer_id,
+    v_shares
+  );
 
   insert into public.group_expenses (
     group_id,
@@ -789,6 +811,186 @@ begin
     (share ->> 'member_id')::uuid,
     (share ->> 'share_minor')::bigint
   from jsonb_array_elements(v_shares) as items(share);
+
+  return v_expense;
+end;
+$$;
+
+create or replace function public.update_group_expense(payload jsonb)
+returns public.group_expenses
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_actor_id uuid := auth.uid();
+  v_expense_id uuid := coalesce(
+    nullif(payload ->> 'expense_id', ''),
+    nullif(payload ->> 'id', '')
+  )::uuid;
+  v_payer_id uuid := (payload ->> 'payer_id')::uuid;
+  v_amount_minor bigint := (payload ->> 'amount_minor')::bigint;
+  v_expense_date date := coalesce(
+    nullif(payload ->> 'expense_date', '')::date,
+    nullif(payload ->> 'date', '')::date
+  );
+  v_description text := nullif(btrim(payload ->> 'description'), '');
+  v_category text := nullif(btrim(payload ->> 'category'), '');
+  v_shares jsonb := payload -> 'participant_shares';
+  v_group public.groups%rowtype;
+  v_expense public.group_expenses%rowtype;
+begin
+  if v_actor_id is null then
+    raise exception 'Authentication required' using errcode = '42501';
+  end if;
+  if v_expense_id is null then
+    raise exception 'Expense id is required' using errcode = '22023';
+  end if;
+
+  select ge.* into v_expense
+  from public.group_expenses as ge
+  where ge.id = v_expense_id;
+  if not found then
+    raise exception 'Expense is unavailable' using errcode = '22023';
+  end if;
+
+  select g.* into v_group
+  from public.groups as g
+  where g.id = v_expense.group_id
+  for update;
+
+  select ge.* into strict v_expense
+  from public.group_expenses as ge
+  where ge.id = v_expense_id
+  for update;
+
+  if v_group.status <> 'active' or v_group.archived_at is not null then
+    raise exception 'Group is unavailable or archived' using errcode = '22023';
+  end if;
+  if v_expense.deleted_at is not null then
+    raise exception 'Deleted expenses cannot be edited' using errcode = '22023';
+  end if;
+  if payload ? 'group_id'
+     and (payload ->> 'group_id')::uuid <> v_expense.group_id then
+    raise exception 'Expense cannot move between groups' using errcode = '22023';
+  end if;
+
+  perform 1
+  from public.group_members as gm
+  where gm.group_id = v_expense.group_id
+    and gm.user_id = v_actor_id
+    and gm.status = 'active'
+  for share;
+  if not found then
+    raise exception 'Active group membership required' using errcode = '42501';
+  end if;
+  if v_expense.created_by <> v_actor_id and v_group.owner_id <> v_actor_id then
+    raise exception 'Only the creator or group owner may edit this expense'
+      using errcode = '42501';
+  end if;
+
+  if v_description is null or v_category is null or v_expense_date is null then
+    raise exception 'Description, category, and date are required' using errcode = '22023';
+  end if;
+  if payload ? 'currency' and payload ->> 'currency' <> v_group.currency then
+    raise exception 'Currency must match the group currency' using errcode = '22023';
+  end if;
+
+  perform public.assert_valid_equal_expense_draft(
+    v_expense.group_id,
+    v_amount_minor,
+    v_payer_id,
+    v_shares
+  );
+
+  update public.group_expenses
+  set amount_minor = v_amount_minor,
+      currency = v_group.currency,
+      description = v_description,
+      category = v_category,
+      expense_date = v_expense_date,
+      payer_id = v_payer_id
+  where id = v_expense_id
+  returning * into v_expense;
+
+  delete from public.expense_participants as ep
+  where ep.expense_id = v_expense_id;
+
+  insert into public.expense_participants (
+    expense_id,
+    group_id,
+    member_id,
+    share_minor
+  )
+  select
+    v_expense_id,
+    v_expense.group_id,
+    (share ->> 'member_id')::uuid,
+    (share ->> 'share_minor')::bigint
+  from jsonb_array_elements(v_shares) as items(share);
+
+  return v_expense;
+end;
+$$;
+
+create or replace function public.delete_group_expense(p_expense_id uuid)
+returns public.group_expenses
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_actor_id uuid := auth.uid();
+  v_group public.groups%rowtype;
+  v_expense public.group_expenses%rowtype;
+begin
+  if v_actor_id is null then
+    raise exception 'Authentication required' using errcode = '42501';
+  end if;
+
+  select ge.* into v_expense
+  from public.group_expenses as ge
+  where ge.id = p_expense_id;
+  if not found then
+    raise exception 'Expense is unavailable' using errcode = '22023';
+  end if;
+
+  select g.* into v_group
+  from public.groups as g
+  where g.id = v_expense.group_id
+  for update;
+
+  select ge.* into strict v_expense
+  from public.group_expenses as ge
+  where ge.id = p_expense_id
+  for update;
+
+  if v_group.status <> 'active' or v_group.archived_at is not null then
+    raise exception 'Group is unavailable or archived' using errcode = '22023';
+  end if;
+
+  perform 1
+  from public.group_members as gm
+  where gm.group_id = v_expense.group_id
+    and gm.user_id = v_actor_id
+    and gm.status = 'active'
+  for share;
+  if not found then
+    raise exception 'Active group membership required' using errcode = '42501';
+  end if;
+  if v_expense.created_by <> v_actor_id and v_group.owner_id <> v_actor_id then
+    raise exception 'Only the creator or group owner may delete this expense'
+      using errcode = '42501';
+  end if;
+
+  if v_expense.deleted_at is not null then
+    return v_expense;
+  end if;
+
+  update public.group_expenses
+  set deleted_at = now()
+  where id = p_expense_id
+  returning * into v_expense;
 
   return v_expense;
 end;
@@ -1043,7 +1245,90 @@ begin
 end;
 $$;
 
+create or replace function public.transfer_group_ownership(
+  p_group_id uuid,
+  p_new_owner_id uuid
+)
+returns public.groups
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_actor_id uuid := auth.uid();
+  v_group public.groups%rowtype;
+begin
+  if v_actor_id is null then
+    raise exception 'Authentication required' using errcode = '42501';
+  end if;
+
+  select g.* into v_group
+  from public.groups as g
+  where g.id = p_group_id
+  for update;
+
+  if not found or v_group.status <> 'active' or v_group.archived_at is not null then
+    raise exception 'Group is unavailable or archived' using errcode = '22023';
+  end if;
+  if v_group.owner_id <> v_actor_id then
+    raise exception 'Only the active group owner may transfer ownership'
+      using errcode = '42501';
+  end if;
+  if not exists (
+    select 1 from public.group_members as gm
+    where gm.group_id = p_group_id
+      and gm.user_id = v_actor_id
+      and gm.status = 'active'
+  ) then
+    raise exception 'Only the active group owner may transfer ownership'
+      using errcode = '42501';
+  end if;
+
+  perform 1
+  from public.group_members as gm
+  where gm.group_id = p_group_id
+    and gm.user_id = p_new_owner_id
+    and gm.status = 'active'
+  for update;
+  if not found then
+    raise exception 'New owner must be an active group member' using errcode = '22023';
+  end if;
+
+  if p_new_owner_id = v_actor_id then
+    return v_group;
+  end if;
+
+  update public.groups
+  set owner_id = p_new_owner_id
+  where id = p_group_id
+  returning * into v_group;
+
+  update public.group_members
+  set role = case
+    when user_id = p_new_owner_id then 'owner'
+    when user_id = v_actor_id then 'member'
+    else role
+  end
+  where group_id = p_group_id
+    and user_id in (v_actor_id, p_new_owner_id);
+
+  return v_group;
+end;
+$$;
+
+-- Browser roles can read financial rows through RLS but cannot mutate them
+-- directly. Expense create/edit/delete is transactional through the RPCs above.
+revoke insert, update, delete on public.group_expenses from authenticated;
+revoke insert, update, delete on public.expense_participants from authenticated;
+
+-- Metadata remains owner-editable, but owner_id is only writable by the
+-- transfer_group_ownership RPC after locking and validating the new owner.
+revoke update on public.groups from authenticated;
+grant update (name, icon, currency, starts_on, ends_on, status, archived_at)
+  on public.groups to authenticated;
+
 revoke all on function public.handle_new_user() from public;
+revoke all on function public.protect_current_owner_membership() from public;
 revoke all on function public.protect_group_currency() from public;
 revoke all on function public.lock_financial_group() from public;
 revoke all on function public.protect_repayment_financial_fields() from public;
@@ -1053,9 +1338,13 @@ revoke all on function public.has_no_group_members(uuid) from public;
 revoke all on function public.is_uninitialized_group_owner(uuid) from public;
 revoke all on function public.can_view_profile(uuid) from public;
 revoke all on function public.join_group(text) from public;
+revoke all on function public.assert_valid_equal_expense_draft(uuid, bigint, uuid, jsonb) from public;
 revoke all on function public.save_group_expense(jsonb) from public;
+revoke all on function public.update_group_expense(jsonb) from public;
+revoke all on function public.delete_group_expense(uuid) from public;
 revoke all on function public.current_group_suggested_transfers(uuid) from public;
 revoke all on function public.save_group_repayment(jsonb) from public;
+revoke all on function public.transfer_group_ownership(uuid, uuid) from public;
 
 grant execute on function public.is_active_group_member(uuid) to authenticated;
 grant execute on function public.is_group_owner(uuid) to authenticated;
@@ -1064,5 +1353,8 @@ grant execute on function public.is_uninitialized_group_owner(uuid) to authentic
 grant execute on function public.can_view_profile(uuid) to authenticated;
 grant execute on function public.join_group(text) to authenticated;
 grant execute on function public.save_group_expense(jsonb) to authenticated;
+grant execute on function public.update_group_expense(jsonb) to authenticated;
+grant execute on function public.delete_group_expense(uuid) to authenticated;
 grant execute on function public.current_group_suggested_transfers(uuid) to authenticated;
 grant execute on function public.save_group_repayment(jsonb) to authenticated;
+grant execute on function public.transfer_group_ownership(uuid, uuid) to authenticated;

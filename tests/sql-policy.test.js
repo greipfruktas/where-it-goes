@@ -25,7 +25,14 @@ for (const table of [
   );
 }
 
-for (const fn of ["join_group", "save_group_expense", "save_group_repayment"]) {
+for (const fn of [
+  "join_group",
+  "save_group_expense",
+  "update_group_expense",
+  "delete_group_expense",
+  "save_group_repayment",
+  "transfer_group_ownership",
+]) {
   assert.match(
     sql,
     new RegExp(`create or replace function public\\.${fn}`, "i"),
@@ -40,7 +47,10 @@ assert.equal(
 );
 assert.doesNotMatch(sql, /service_role/i);
 
-assert.match(sql, /create extension if not exists pgcrypto/i);
+assert.match(sql, /create schema if not exists extensions/i);
+assert.match(sql, /create extension if not exists pgcrypto with schema extensions/i);
+assert.match(sql, /grant usage on schema extensions to authenticated/i);
+assert.match(sql, /extensions\.digest\s*\(p_token,\s*'sha256'\)/i);
 assert.match(sql, /amount_minor\s+bigint\s+not null\s+check\s*\(amount_minor > 0\)/i);
 assert.match(sql, /expense_date\s+date\s+not null/i);
 assert.match(sql, /repayment_date\s+date\s+not null/i);
@@ -58,8 +68,11 @@ for (const fn of [
   "can_view_profile",
   "join_group",
   "save_group_expense",
+  "update_group_expense",
+  "delete_group_expense",
   "current_group_suggested_transfers",
   "save_group_repayment",
+  "transfer_group_ownership",
 ]) {
   assert.match(
     sql,
@@ -81,7 +94,8 @@ for (const fn of [
 assert.match(sql, /create policy "active members read groups"/i);
 assert.match(sql, /create policy "owners manage group metadata"/i);
 assert.match(sql, /create policy "active members create financial entries through rpc"/i);
-assert.match(sql, /create policy "creators or owners update expenses"/i);
+assert.match(sql, /only the creator or group owner may edit this expense/i);
+assert.match(sql, /only the creator or group owner may delete this expense/i);
 assert.match(sql, /status\s*=\s*'active'/i);
 assert.match(sql, /auth\.uid\(\) is null/i);
 
@@ -109,6 +123,14 @@ assert.match(sql, /repayment financial fields are immutable/i);
 assert.match(sql, /create trigger group_repayments_lock_group/i);
 assert.match(sql, /create trigger group_expenses_lock_group/i);
 assert.match(sql, /group currency cannot change after financial activity/i);
+assert.match(sql, /participant shares must match the deterministic equal split/i);
+assert.match(sql, /row_number\(\) over \(order by member_id\)/i);
+assert.match(sql, /revoke insert, update, delete on public\.group_expenses/i);
+assert.match(sql, /revoke insert, update, delete on public\.expense_participants/i);
+assert.doesNotMatch(sql, /create policy "creators or owners update expenses"/i);
+assert.doesNotMatch(sql, /create policy "creators or owners (?:insert|update|delete) expense shares"/i);
+assert.match(sql, /new owner must be an active group member/i);
+assert.match(sql, /revoke update on public\.groups from authenticated/i);
 
 const expenseRpc = sql.match(
   /create or replace function public\.save_group_expense[\s\S]+?revoke all on function public\.save_group_expense/i,
@@ -116,7 +138,8 @@ const expenseRpc = sql.match(
 assert.match(expenseRpc, /status\s*=\s*'active'/i);
 assert.match(expenseRpc, /archived_at is not null/i);
 assert.match(expenseRpc, /jsonb_array_elements/i);
-assert.match(expenseRpc, /sum\s*\(\s*\(share\s*->>\s*'share_minor'\)\s*::bigint\s*\)/i);
+assert.match(expenseRpc, /assert_valid_equal_expense_draft/i);
+assert.match(sql, /sum\s*\(\s*\(share\s*->>\s*'share_minor'\)\s*::bigint\s*\)/i);
 
 const repaymentRpc = sql.match(
   /create or replace function public\.save_group_repayment[\s\S]+?revoke all on function public\.save_group_repayment/i,
