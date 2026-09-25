@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { escapeGroupHTML, renderActivity, renderExpenseForm, renderGroupsList, renderGroupShell, renderSettlementSuggestions } from "../src/groups/view.js";
+import { escapeGroupHTML, renderActivity, renderExpenseForm, renderGroupsList, renderGroupShell, renderOwnerSettings, renderSettlementSuggestions } from "../src/groups/view.js";
 
 assert.equal(escapeGroupHTML(`<img onerror="x">`), "&lt;img onerror=&quot;x&quot;&gt;");
 const list = renderGroupsList([{ id: "g1", name: "<Trip>", icon: "✈️", currency: "EUR" }]);
@@ -48,3 +48,11 @@ const archived = renderGroupShell({ state: "detail", group: { id: "g", name: "Ol
 assert.match(archived, /Archived/);
 assert.doesNotMatch(archived, /data-expense-open/);
 assert.doesNotMatch(archived, /data-expense-edit/);
+
+assert.equal(renderOwnerSettings({ owner_id: "owner", group_members: members }, "u2"), "");
+const ownerControls = renderOwnerSettings({ id: "g", owner_id: "u1", status: "active", group_members: members, group_invites: [] }, "u1");
+assert.match(ownerControls, /data-invite-rotate/);
+assert.match(ownerControls, /data-member-remove="u2"/);
+assert.doesNotMatch(ownerControls, /data-member-remove="u1"/);
+assert.match(ownerControls, /name="newOwnerId"/);
+assert.match(ownerControls, /Transfer ownership before leaving/);

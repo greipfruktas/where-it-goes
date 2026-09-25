@@ -30,6 +30,43 @@ function rootStub() {
 
 {
   const root = rootStub();
+  const writes = [];
+  let allow = false;
+  const group = { id: "g1", owner_id: "u1", status: "active", group_members: [{ user_id: "u1", status: "active" }, { user_id: "u2", status: "active" }], group_invites: [], group_expenses: [], group_repayments: [] };
+  const controller = createGroupsController({ root, navigatorState: { onLine: true }, confirmState: () => allow, auth: { getSession: async () => ({ user: { id: "u1" } }) }, repository: {
+    getGroup: async () => group,
+    listGroups: async () => [],
+    removeMember: async (...args) => { writes.push(["remove", ...args]); },
+    rotateInvite: async (...args) => { writes.push(["rotate", ...args]); return { token: "fresh" }; },
+    archiveGroup: async (...args) => { writes.push(["archive", ...args]); return { ...group, status: "archived" }; }
+  } });
+  await controller.openGroup("g1");
+  await controller.removeMember("u2");
+  await controller.rotateInvite();
+  await controller.archiveGroup();
+  assert.equal(writes.length, 0);
+  allow = true;
+  await controller.removeMember("u2");
+  await controller.rotateInvite();
+  await controller.archiveGroup();
+  assert.deepEqual(writes.map((entry) => entry[0]), ["remove", "rotate", "archive"]);
+}
+
+{
+  const root = rootStub();
+  let lists = 0;
+  const controller = createGroupsController({ root, navigatorState: { onLine: true }, confirmState: () => true, auth: { getSession: async () => ({ user: { id: "u1" } }) }, repository: {
+    getGroup: async () => ({ id: "g1", owner_id: "u1", status: "active", group_members: [], group_expenses: [], group_repayments: [] }),
+    removeMember: async () => { throw new Error("not authorized"); },
+    listGroups: async () => { lists += 1; return []; }
+  } });
+  await controller.openGroup("g1");
+  await assert.rejects(() => controller.removeMember("u2"), /not authorized/);
+  assert.equal(lists, 1);
+}
+
+{
+  const root = rootStub();
   const calls = [];
   let attempt = 0;
   const group = { id: "g1", status: "active", owner_id: "a", currency: "EUR", group_members: [

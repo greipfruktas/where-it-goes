@@ -22,6 +22,7 @@ export function createGroupsController({ repository, auth, root, navigatorState 
   let subscription = null;
   let refreshTimer = null;
   let realtimeHealthy = false;
+  let currentInviteLink = "";
 
   const render = (model) => { root.innerHTML = renderGroupShell(model); };
   const setMode = (mode) => {
@@ -46,7 +47,7 @@ export function createGroupsController({ repository, auth, root, navigatorState 
   }
 
   function renderDetail() {
-    render({ state: "detail", group: currentGroup, currentUserId: currentUser?.id, today: today(), expenseDraft, expenseStatus, repaymentDraft, repaymentStatus, netBalances: groupNetBalances() });
+    render({ state: "detail", group: currentGroup, currentUserId: currentUser?.id, today: today(), expenseDraft, expenseStatus, repaymentDraft, repaymentStatus, netBalances: groupNetBalances(), inviteLink: currentInviteLink });
   }
 
   function groupNetBalances() {
@@ -167,6 +168,68 @@ export function createGroupsController({ repository, auth, root, navigatorState 
     return repaymentSubmission;
   }
 
+  async function removeMember(memberId) {
+    if (!confirmState?.("Remove this member from the group? They will immediately lose access.")) return null;
+    try {
+      const result = await repository.removeMember(currentGroup.id, memberId);
+      await openGroup(currentGroup.id);
+      return result;
+    } catch (error) {
+      if (/not authorized/i.test(error.message)) await loadGroups();
+      throw error;
+    }
+  }
+
+  async function rotateInvite() {
+    if (!confirmState?.("Create a new invitation link? Any previous link will stop working.")) return null;
+    const invite = await repository.rotateInvite(currentGroup.id);
+    currentInviteLink = `${locationState?.origin || globalThis.location?.origin || ""}${locationState?.pathname || "/"}?invite=${encodeURIComponent(invite.token)}`;
+    renderDetail();
+    return invite;
+  }
+
+  async function disableInvite() {
+    const active = currentGroup?.group_invites?.find((invite) => invite.is_active);
+    if (!active || !confirmState?.("Disable the current invitation link?")) return null;
+    const result = await repository.disableInvite(active.id);
+    currentInviteLink = "";
+    await openGroup(currentGroup.id);
+    return result;
+  }
+
+  async function archiveGroup() {
+    if (!confirmState?.("Archive this group? Expenses, repayments and invitations will become read-only.")) return null;
+    const result = await repository.archiveGroup(currentGroup.id);
+    currentInviteLink = "";
+    currentGroup = result || { ...currentGroup, status: "archived" };
+    renderDetail();
+    return result;
+  }
+
+  async function reopenGroup() {
+    if (!confirmState?.("Reopen this group? You will need to create a new invitation link.")) return null;
+    const result = await repository.reopenGroup(currentGroup.id);
+    currentInviteLink = "";
+    currentGroup = result || { ...currentGroup, status: "active" };
+    renderDetail();
+    return result;
+  }
+
+  async function transferOwnership(newOwnerId) {
+    if (!newOwnerId) throw new Error("Choose a new owner first");
+    if (!confirmState?.("Transfer ownership to this member?")) return null;
+    const result = await repository.transferOwnership(currentGroup.id, newOwnerId);
+    await openGroup(currentGroup.id);
+    return result;
+  }
+
+  async function shareInvite() {
+    if (!currentInviteLink) return;
+    if (navigatorState?.share) return navigatorState.share({ title: currentGroup?.name || "Shared expense group", text: `Join ${currentGroup?.name || "my group"} on Where It Goes`, url: currentInviteLink });
+    if (navigatorState?.clipboard?.writeText) return navigatorState.clipboard.writeText(currentInviteLink);
+    throw new Error("Copy is unavailable on this device");
+  }
+
   async function loadGroups() {
     const user = await session();
     if (!user) return render({ state: "signed-out" });
@@ -234,6 +297,12 @@ export function createGroupsController({ repository, auth, root, navigatorState 
     if (target.matches("[data-expense-delete]")) return deleteExpense();
     if (target.matches("[data-repayment-payer]")) return openRepayment({ payerId: target.dataset.repaymentPayer, recipientId: target.dataset.repaymentRecipient, amountMinor: Number(target.dataset.repaymentAmount) });
     if (target.matches("[data-repayment-close]")) { repaymentDraft = null; repaymentStatus = ""; return renderDetail(); }
+    if (target.matches("[data-member-remove]")) return removeMember(target.dataset.memberRemove);
+    if (target.matches("[data-invite-rotate]")) return rotateInvite();
+    if (target.matches("[data-invite-disable]")) return disableInvite();
+    if (target.matches("[data-invite-share]")) return shareInvite();
+    if (target.matches("[data-group-archive]")) return archiveGroup();
+    if (target.matches("[data-group-reopen]")) return reopenGroup();
     if (target.matches("[data-group-create-open]")) { const form = root.querySelector("[data-group-create]"); if (form) form.hidden = false; }
     if (target.matches("[data-close-create]")) { const form = root.querySelector("[data-group-create]"); if (form) form.hidden = true; }
   });
@@ -250,6 +319,10 @@ export function createGroupsController({ repository, auth, root, navigatorState 
       captureRepaymentForm(event.target);
       try { await submitRepayment(); } catch { /* Status is rendered with the preserved form. */ }
       return;
+    }
+    if (event.target.matches?.("[data-owner-transfer]")) {
+      event.preventDefault();
+      return transferOwnership(new FormData(event.target).get("newOwnerId"));
     }
     if (!event.target.matches?.("[data-group-create]") || submitting) return;
     event.preventDefault();
@@ -275,7 +348,7 @@ export function createGroupsController({ repository, auth, root, navigatorState 
     if (documentState.visibilityState === "visible" && currentGroup?.id && !realtimeHealthy) openGroup(currentGroup.id);
   });
 
-  return { start, showGroups, showPersonal, openGroup, acceptInvite, openExpense, submitExpense, editExpense, deleteExpense, openRepayment, submitRepayment, getExpenseDraft: () => expenseDraft, getRepaymentDraft: () => repaymentDraft };
+  return { start, showGroups, showPersonal, openGroup, acceptInvite, openExpense, submitExpense, editExpense, deleteExpense, openRepayment, submitRepayment, removeMember, rotateInvite, disableInvite, archiveGroup, reopenGroup, transferOwnership, shareInvite, getExpenseDraft: () => expenseDraft, getRepaymentDraft: () => repaymentDraft };
 }
 
 async function bootstrap() {
