@@ -5,8 +5,8 @@ The Personal tracker remains local and does not depend on this setup. Shared Gro
 ## 1. Create and configure Supabase
 
 1. Create a Supabase project and note its project URL.
-2. Open SQL Editor and run the files in `supabase/migrations/` in numeric order. For a new project, run `001_shared_groups.sql` and then `002_archive_guards.sql`. For an existing project that already has `001`, run only `002`.
-3. In Database → Publications → `supabase_realtime`, enable all seven tables: `profiles`, `groups`, `group_members`, `group_invites`, `group_expenses`, `expense_participants`, and `group_repayments`.
+2. Open SQL Editor and run the files in `supabase/migrations/` in numeric order. For a new project, run `001_shared_groups.sql`, `002_archive_guards.sql`, then `003_personal_sync.sql`. For an existing project, run only the migrations not yet applied.
+3. In Database → Publications → `supabase_realtime`, enable the seven Groups tables (`profiles`, `groups`, `group_members`, `group_invites`, `group_expenses`, `expense_participants`, and `group_repayments`) plus `personal_expenses` and `personal_settings`.
 4. In Authentication → URL Configuration, set the Site URL to the live GitHub Pages app.
 5. Add both the live GitHub Pages URL and `http://localhost:4173/` to Redirect URLs.
 6. In Project Settings → API, copy the project URL and the key explicitly labelled **Publishable** or **Anonymous** into `supabase/config.js`.
@@ -35,6 +35,9 @@ The Google client secret belongs only in Supabase’s private provider settings.
 - Confirm an outsider cannot read the group and a removed member loses access.
 - Archive the group and confirm expense, repayment and invitation actions become read-only.
 - Reopen it, then rotate the invitation before sharing again; reopening does not reactivate an old link.
+- Sign in with one account on two devices and confirm Personal expenses and settings synchronize.
+- Sign in with a different account and confirm it cannot read the first account's `personal_expenses`, `personal_settings`, or `personal_operations` rows.
+- Confirm an anonymous browser cannot read or mutate any Personal synchronization table.
 
 ## 4. Local testing
 
