@@ -32,6 +32,62 @@ function rootStub() {
   const root = rootStub();
   const calls = [];
   let attempt = 0;
+  const group = { id: "g1", status: "active", owner_id: "a", currency: "EUR", group_members: [
+    { user_id: "a", status: "active", profiles: { display_name: "A" } },
+    { user_id: "b", status: "active", profiles: { display_name: "B" } }
+  ], group_expenses: [{ payer_id: "a", amount_minor: 400, expense_participants: [{ member_id: "a", share_minor: 200 }, { member_id: "b", share_minor: 200 }] }], group_repayments: [] };
+  const controller = createGroupsController({
+    root, navigatorState: { onLine: true }, uuid: () => "repay-once", today: () => "2026-09-25",
+    auth: { getSession: async () => ({ user: { id: "b" } }) },
+    repository: {
+      getGroup: async () => group,
+      saveRepayment: async (draft) => { calls.push(draft); attempt += 1; if (attempt === 1) throw new Error("Network unavailable"); return { id: "r1" }; }
+    }
+  });
+  await controller.openGroup("g1");
+  controller.openRepayment({ payerId: "b", recipientId: "a", amountMinor: 200 });
+  assert.deepEqual(controller.getRepaymentDraft(), { groupId: "g1", idempotencyKey: "repay-once", payerId: "b", recipientId: "a", amount: "2.00", date: "2026-09-25" });
+  await assert.rejects(() => controller.submitRepayment(), /Network unavailable/);
+  await controller.submitRepayment();
+  assert.equal(calls[0].idempotencyKey, "repay-once");
+  assert.equal(calls[1].idempotencyKey, "repay-once");
+}
+
+{
+  const root = rootStub();
+  let writes = 0;
+  const group = { id: "g1", status: "active", owner_id: "a", group_members: [
+    { user_id: "a", status: "active" }, { user_id: "b", status: "active" }, { user_id: "c", status: "removed" }
+  ], group_expenses: [{ payer_id: "a", amount_minor: 400, expense_participants: [{ member_id: "a", share_minor: 200 }, { member_id: "b", share_minor: 200 }] }], group_repayments: [] };
+  const controller = createGroupsController({ root, navigatorState: { onLine: true }, auth: { getSession: async () => ({ user: { id: "b" } }) }, repository: { getGroup: async () => group, saveRepayment: async () => { writes += 1; } } });
+  await controller.openGroup("g1");
+  for (const draft of [
+    { payerId: "b", recipientId: "a", amountMinor: 0 },
+    { payerId: "b", recipientId: "b", amountMinor: 100 },
+    { payerId: "c", recipientId: "a", amountMinor: 100 },
+    { payerId: "b", recipientId: "a", amountMinor: 201 }
+  ]) {
+    controller.openRepayment(draft);
+    await assert.rejects(() => controller.submitRepayment());
+  }
+  assert.equal(writes, 0);
+}
+
+{
+  const root = rootStub();
+  let writes = 0;
+  const controller = createGroupsController({ root, navigatorState: { onLine: true }, auth: { getSession: async () => ({ user: { id: "u1" } }) }, repository: { getGroup: async () => ({ id: "g1", status: "archived", owner_id: "u1", group_members: [{ user_id: "u1", status: "active" }], group_expenses: [], group_repayments: [] }), saveExpense: async () => { writes += 1; } } });
+  await controller.openGroup("g1");
+  assert.throws(() => controller.openExpense(), /archived/i);
+  assert.equal(writes, 0);
+  controller.showPersonal();
+  assert.equal(root.hidden, true);
+}
+
+{
+  const root = rootStub();
+  const calls = [];
+  let attempt = 0;
   const controller = createGroupsController({
     root,
     navigatorState: { onLine: true },

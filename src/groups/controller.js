@@ -1,5 +1,5 @@
 import { renderGroupShell } from "./view.js";
-import { allocateEqualShares, parseMinorUnits, validateExpenseDraft } from "./domain.js";
+import { allocateEqualShares, calculateNetBalances, parseMinorUnits, simplifyTransfers, validateExpenseDraft, validateRepaymentDraft } from "./domain.js";
 
 function userFromSession(session) {
   return session?.user || session?.session?.user || null;
@@ -16,6 +16,9 @@ export function createGroupsController({ repository, auth, root, navigatorState 
   let currentUser = null;
   let expenseDraft = null;
   let expenseStatus = "";
+  let repaymentDraft = null;
+  let repaymentStatus = "";
+  let repaymentSubmission = null;
   let subscription = null;
   let refreshTimer = null;
   let realtimeHealthy = false;
@@ -43,7 +46,13 @@ export function createGroupsController({ repository, auth, root, navigatorState 
   }
 
   function renderDetail() {
-    render({ state: "detail", group: currentGroup, currentUserId: currentUser?.id, today: today(), expenseDraft, expenseStatus });
+    render({ state: "detail", group: currentGroup, currentUserId: currentUser?.id, today: today(), expenseDraft, expenseStatus, repaymentDraft, repaymentStatus, netBalances: groupNetBalances() });
+  }
+
+  function groupNetBalances() {
+    const expenses = (currentGroup?.group_expenses || []).filter((expense) => !expense.deleted_at).map((expense) => ({ payerId: expense.payer_id, amountMinor: expense.amount_minor, shares: (expense.expense_participants || []).map((share) => ({ memberId: share.member_id, shareMinor: share.share_minor })) }));
+    const repayments = (currentGroup?.group_repayments || []).filter((repayment) => !repayment.deleted_at).map((repayment) => ({ payerId: repayment.payer_id, recipientId: repayment.recipient_id, amountMinor: repayment.amount_minor }));
+    return calculateNetBalances(expenses, repayments);
   }
 
   function subscribe(groupId) {
@@ -57,6 +66,7 @@ export function createGroupsController({ repository, auth, root, navigatorState 
   }
 
   function openExpense(initial = {}) {
+    if (currentGroup?.status === "archived") throw new Error("This group is archived and read-only");
     const activeIds = (currentGroup?.group_members || []).filter((member) => member.status === "active").map((member) => member.user_id);
     expenseDraft = {
       groupId: initial.groupId || currentGroup?.id,
@@ -118,6 +128,43 @@ export function createGroupsController({ repository, auth, root, navigatorState 
     await repository.deleteExpense(expenseDraft.expenseId);
     expenseDraft = null;
     return openGroup(currentGroup.id);
+  }
+
+  function openRepayment(initial = {}) {
+    if (currentGroup?.status === "archived") throw new Error("This group is archived and read-only");
+    repaymentDraft = { groupId: initial.groupId || currentGroup?.id, idempotencyKey: initial.idempotencyKey || uuid(), payerId: initial.payerId || "", recipientId: initial.recipientId || "", amount: initial.amount ?? (Number.isSafeInteger(initial.amountMinor) ? (initial.amountMinor / 100).toFixed(2) : ""), date: initial.date || today() };
+    repaymentStatus = "";
+    if (currentGroup) renderDetail();
+    return repaymentDraft;
+  }
+
+  function captureRepaymentForm(form) {
+    const data = new FormData(form);
+    repaymentDraft = { ...repaymentDraft, payerId: String(data.get("payerId") || ""), recipientId: String(data.get("recipientId") || ""), amount: String(data.get("amount") || ""), date: String(data.get("date") || "") };
+  }
+
+  async function submitRepayment() {
+    if (repaymentSubmission) return repaymentSubmission;
+    if (!repaymentDraft) throw new Error("Open a repayment before submitting");
+    repaymentSubmission = (async () => {
+      try {
+        const amountMinor = parseMinorUnits(repaymentDraft.amount);
+        const activeIds = (currentGroup?.group_members || []).filter((member) => member.status === "active").map((member) => member.user_id);
+        const suggested = simplifyTransfers(groupNetBalances());
+        const errors = validateRepaymentDraft({ payerId: repaymentDraft.payerId, recipientId: repaymentDraft.recipientId, amountMinor, date: repaymentDraft.date }, activeIds, suggested);
+        if (errors.length) throw new Error(errors[0]);
+        const result = await repository.saveRepayment({ ...repaymentDraft, amountMinor });
+        repaymentDraft = null;
+        repaymentStatus = "";
+        if (currentGroup?.id) await openGroup(currentGroup.id);
+        return result;
+      } catch (error) {
+        repaymentStatus = `${error.message}. Your repayment is still here—retry when ready.`;
+        if (currentGroup) renderDetail();
+        throw error;
+      } finally { repaymentSubmission = null; }
+    })();
+    return repaymentSubmission;
   }
 
   async function loadGroups() {
@@ -185,6 +232,8 @@ export function createGroupsController({ repository, auth, root, navigatorState 
     if (target.matches("[data-expense-close]")) { expenseDraft = null; expenseStatus = ""; return renderDetail(); }
     if (target.matches("[data-expense-edit]")) return editExpense(target.dataset.expenseEdit);
     if (target.matches("[data-expense-delete]")) return deleteExpense();
+    if (target.matches("[data-repayment-payer]")) return openRepayment({ payerId: target.dataset.repaymentPayer, recipientId: target.dataset.repaymentRecipient, amountMinor: Number(target.dataset.repaymentAmount) });
+    if (target.matches("[data-repayment-close]")) { repaymentDraft = null; repaymentStatus = ""; return renderDetail(); }
     if (target.matches("[data-group-create-open]")) { const form = root.querySelector("[data-group-create]"); if (form) form.hidden = false; }
     if (target.matches("[data-close-create]")) { const form = root.querySelector("[data-group-create]"); if (form) form.hidden = true; }
   });
@@ -194,6 +243,12 @@ export function createGroupsController({ repository, auth, root, navigatorState 
       event.preventDefault();
       captureExpenseForm(event.target);
       try { await submitExpense(); } catch { /* Status is rendered with the preserved form. */ }
+      return;
+    }
+    if (event.target.matches?.("[data-repayment-form]")) {
+      event.preventDefault();
+      captureRepaymentForm(event.target);
+      try { await submitRepayment(); } catch { /* Status is rendered with the preserved form. */ }
       return;
     }
     if (!event.target.matches?.("[data-group-create]") || submitting) return;
@@ -220,7 +275,7 @@ export function createGroupsController({ repository, auth, root, navigatorState 
     if (documentState.visibilityState === "visible" && currentGroup?.id && !realtimeHealthy) openGroup(currentGroup.id);
   });
 
-  return { start, showGroups, showPersonal, openGroup, acceptInvite, openExpense, submitExpense, editExpense, deleteExpense, getExpenseDraft: () => expenseDraft };
+  return { start, showGroups, showPersonal, openGroup, acceptInvite, openExpense, submitExpense, editExpense, deleteExpense, openRepayment, submitRepayment, getExpenseDraft: () => expenseDraft, getRepaymentDraft: () => repaymentDraft };
 }
 
 async function bootstrap() {

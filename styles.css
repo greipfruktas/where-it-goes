@@ -132,6 +132,25 @@ button { cursor: pointer; }
 .expense-form-status { margin: 0; padding: 11px 13px; border-radius: 13px; background: #fff1ea; color: #a54535; font-size: 12px; line-height: 1.4; }
 .shared-expense-actions { display: flex; gap: 9px; }
 .shared-delete-button { min-height: 52px; padding: 0 16px; border: 1px solid #e5c5b9; border-radius: 17px; background: #fff1ea; color: #ad4434; font-weight: 900; }
+.settlement-section { margin-top: 17px; padding: 18px; border: 1px solid rgba(114,85,46,.13); border-radius: 25px; background: rgba(255,250,240,.7); }
+.settlement-section .group-detail-heading { margin: 0 0 11px; }
+.settlement-list { display: grid; gap: 8px; }
+.settlement-row { min-height: 57px; padding: 10px 13px; border: 1px solid var(--line); border-radius: 16px; background: var(--card); display: flex; align-items: center; justify-content: space-between; gap: 12px; text-align: left; }
+.settlement-row span { font-size: 13px; font-weight: 850; }
+.settlement-row b { color: var(--green); }
+.settlement-row small { color: var(--muted); font-size: 10px; font-weight: 800; text-align: right; }
+.settlement-row:disabled { cursor: default; opacity: .72; }
+.all-settled { min-height: 61px; padding: 10px 13px; border-radius: 17px; background: var(--green-soft); display: flex; align-items: center; gap: 12px; color: var(--green); }
+.all-settled > span { width: 38px; height: 38px; border-radius: 50%; background: var(--green); color: white; display: grid; place-items: center; font-weight: 950; }
+.all-settled > div { display: grid; gap: 3px; }
+.all-settled small { color: var(--muted); }
+.group-repayment-form { margin-top: 16px; padding: 20px; border: 1px solid rgba(114,85,46,.15); border-radius: 25px; background: var(--card); box-shadow: var(--shadow); display: grid; gap: 14px; }
+.group-repayment-form label { display: grid; gap: 7px; color: var(--muted); font-size: 11px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
+.group-repayment-form input, .group-repayment-form select { width: 100%; min-height: 50px; padding: 0 13px; border: 1px solid var(--line); border-radius: 15px; background: rgba(255,255,255,.55); font-size: 16px; }
+.repayment-people { display: grid; grid-template-columns: minmax(0,1fr) 24px minmax(0,1fr); align-items: end; gap: 7px; }
+.repayment-people > span { min-height: 50px; display: grid; place-items: center; color: var(--green); font-weight: 950; }
+.group-repayment-form .save-button { width: 100%; }
+.archived-badge { padding: 7px 10px; border-radius: 999px; background: var(--line); color: var(--muted); font-size: 10px; font-weight: 900; text-transform: uppercase; }
 body[data-style="neon"] .app-mode-switch, body[data-style="neon"] .groups-state-card, body[data-style="neon"] .shared-group-card, body[data-style="neon"] .group-create-form, body[data-style="neon"] .group-coming-next { background: rgba(24,29,53,.9); border-color: rgba(135,150,230,.2); }
 body[data-style="neon"] .app-mode-switch button.selected, body[data-style="neon"] .create-group-cta, body[data-style="neon"] .group-hero { background: linear-gradient(145deg, #6cf4d2, #9b7cff); color: #0d1021; }
 body[data-style="swiss"] .app-mode-switch, body[data-style="swiss"] .groups-state-card, body[data-style="swiss"] .shared-group-card, body[data-style="swiss"] .group-create-form, body[data-style="swiss"] .group-hero, body[data-style="swiss"] .group-coming-next { border-radius: 8px; box-shadow: none; }

@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { escapeGroupHTML, renderActivity, renderExpenseForm, renderGroupsList, renderGroupShell } from "../src/groups/view.js";
+import { escapeGroupHTML, renderActivity, renderExpenseForm, renderGroupsList, renderGroupShell, renderSettlementSuggestions } from "../src/groups/view.js";
 
 assert.equal(escapeGroupHTML(`<img onerror="x">`), "&lt;img onerror=&quot;x&quot;&gt;");
 const list = renderGroupsList([{ id: "g1", name: "<Trip>", icon: "✈️", currency: "EUR" }]);
@@ -32,3 +32,19 @@ assert.match(activity, /&lt;Dinner&gt;/);
 assert.doesNotMatch(activity, /<img/);
 assert.doesNotMatch(activity, /Deleted/);
 assert.match(activity, /data-expense-edit="e1"/);
+
+const settlementMembers = [
+  { user_id: "a", status: "active", profiles: { display_name: "A" } },
+  { user_id: "b", status: "active", profiles: { display_name: "B" } },
+  { user_id: "c", status: "removed", profiles: { display_name: "C" } }
+];
+const settlements = renderSettlementSuggestions({ a: 500, b: -200, c: -300 }, settlementMembers, "EUR");
+assert.match(settlements, /C owes A €3\.00/);
+assert.match(settlements, /B owes A €2\.00/);
+assert.match(settlements, /data-repayment-payer="c"/);
+assert.match(renderSettlementSuggestions({ a: 0, b: 0 }, settlementMembers, "EUR"), /All settled/);
+
+const archived = renderGroupShell({ state: "detail", group: { id: "g", name: "Old trip", status: "archived", owner_id: "u1", group_members: members, group_expenses: [] }, currentUserId: "u1" });
+assert.match(archived, /Archived/);
+assert.doesNotMatch(archived, /data-expense-open/);
+assert.doesNotMatch(archived, /data-expense-edit/);
