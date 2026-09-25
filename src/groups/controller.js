@@ -354,10 +354,10 @@ export function createGroupsController({ repository, auth, root, navigatorState 
 async function bootstrap() {
   const root = document.querySelector("#groupsRoot");
   if (!root) return;
-  const [{ SUPABASE_CONFIG }, supabaseModule, repositoryModule] = await Promise.all([
+  const [{ supabaseConfig }, supabaseModule, repositoryModule] = await Promise.all([
     import("../../supabase/config.js"), import("./supabase.js"), import("./repository.js")
   ]);
-  const client = supabaseModule.createGroupsClient(SUPABASE_CONFIG);
+  const client = supabaseModule.createGroupsClient(supabaseConfig);
   const repository = repositoryModule.createGroupsRepository(client);
   const auth = {
     consumeAuthReturn: supabaseModule.consumeAuthReturn,
