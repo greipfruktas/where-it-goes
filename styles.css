@@ -203,6 +203,16 @@ legend span, .form-row em { color: var(--muted); font-size: 11px; font-style: no
 .full-width-button { width: 100%; margin-top: 22px; }
 .toast { position: fixed; z-index: 50; left: 50%; bottom: 105px; transform: translate(-50%, 20px); padding: 11px 17px; border-radius: 999px; background: var(--ink); color: white; box-shadow: var(--shadow); font-size: 12px; font-weight: 800; opacity: 0; pointer-events: none; transition: .2s ease; }
 .toast.show { opacity: 1; transform: translate(-50%, 0); }
+.app-footer { margin-top: 34px; text-align: center; }
+.app-footer a { color: var(--muted); font-size: 12px; font-weight: 800; text-underline-offset: 3px; }
+.privacy-shell { position: relative; width: min(100%, 620px); margin: 0 auto; padding: max(28px, env(safe-area-inset-top)) 20px max(48px, env(safe-area-inset-bottom)); }
+.privacy-back { display: inline-flex; align-items: center; gap: 7px; margin-bottom: 30px; color: var(--green); font-size: 13px; font-weight: 900; text-decoration: none; }
+.privacy-card { padding: clamp(24px, 7vw, 42px); border: 1px solid rgba(114, 85, 46, .14); border-radius: 28px; background: rgba(255,250,240,.88); box-shadow: var(--shadow); }
+.privacy-card h1 { margin-bottom: 10px; }
+.privacy-card h2 { margin: 28px 0 9px; }
+.privacy-card p { color: var(--muted); font-size: 15px; line-height: 1.65; }
+.privacy-card p:last-child { margin-bottom: 0; }
+.privacy-updated { color: var(--green) !important; font-size: 12px !important; font-weight: 850; letter-spacing: .04em; text-transform: uppercase; }
 
 body[data-style="neon"] {
   --ink: #f7f4ff;
