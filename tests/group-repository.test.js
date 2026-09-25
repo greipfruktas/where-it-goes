@@ -33,3 +33,16 @@ const failedRepository = createGroupsRepository({
 await assert.rejects(() => failedRepository.saveExpense(draft), {
   message: "Network unavailable"
 });
+
+{
+  let statusCallback;
+  const channel = {
+    on() { return this; },
+    subscribe(callback) { statusCallback = callback; return this; }
+  };
+  const realtimeRepository = createGroupsRepository({ channel: () => channel });
+  let status;
+  assert.equal(realtimeRepository.subscribeToGroup("g", () => {}, (value) => { status = value; }), channel);
+  statusCallback("SUBSCRIBED");
+  assert.equal(status, "SUBSCRIBED");
+}

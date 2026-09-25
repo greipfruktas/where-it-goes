@@ -1,4 +1,5 @@
 import { renderGroupShell } from "./view.js";
+import { allocateEqualShares, parseMinorUnits, validateExpenseDraft } from "./domain.js";
 
 function userFromSession(session) {
   return session?.user || session?.session?.user || null;
@@ -8,8 +9,16 @@ function joinedGroupId(joined) {
   return joined?.group_id || joined?.groupId || joined?.id;
 }
 
-export function createGroupsController({ repository, auth, root, navigatorState = globalThis.navigator, locationState = globalThis.location, historyState = globalThis.history, personalRoot = null, modeRoot = null }) {
+export function createGroupsController({ repository, auth, root, navigatorState = globalThis.navigator, locationState = globalThis.location, historyState = globalThis.history, documentState = globalThis.document, confirmState = globalThis.confirm, personalRoot = null, modeRoot = null, uuid = () => globalThis.crypto.randomUUID(), today = () => new Date().toLocaleDateString("en-CA") }) {
   let submitting = false;
+  let expenseSubmission = null;
+  let currentGroup = null;
+  let currentUser = null;
+  let expenseDraft = null;
+  let expenseStatus = "";
+  let subscription = null;
+  let refreshTimer = null;
+  let realtimeHealthy = false;
 
   const render = (model) => { root.innerHTML = renderGroupShell(model); };
   const setMode = (mode) => {
@@ -19,14 +28,96 @@ export function createGroupsController({ repository, auth, root, navigatorState 
   };
 
   async function session() {
-    return userFromSession(await auth.getSession?.());
+    currentUser = userFromSession(await auth.getSession?.());
+    return currentUser;
   }
 
   async function openGroup(groupId) {
     render({ state: "loading" });
     const group = await repository.getGroup(groupId);
-    render({ state: "detail", group });
+    currentGroup = group;
+    await session();
+    renderDetail();
+    subscribe(groupId);
     return group;
+  }
+
+  function renderDetail() {
+    render({ state: "detail", group: currentGroup, currentUserId: currentUser?.id, today: today(), expenseDraft, expenseStatus });
+  }
+
+  function subscribe(groupId) {
+    subscription?.unsubscribe?.();
+    if (!repository.subscribeToGroup) return;
+    const refresh = () => {
+      clearTimeout(refreshTimer);
+      refreshTimer = setTimeout(() => openGroup(groupId), 120);
+    };
+    subscription = repository.subscribeToGroup(groupId, refresh, (status) => { realtimeHealthy = status === "SUBSCRIBED"; });
+  }
+
+  function openExpense(initial = {}) {
+    const activeIds = (currentGroup?.group_members || []).filter((member) => member.status === "active").map((member) => member.user_id);
+    expenseDraft = {
+      groupId: initial.groupId || currentGroup?.id,
+      idempotencyKey: initial.idempotencyKey || uuid(),
+      amount: initial.amount || "",
+      description: initial.description || "",
+      category: initial.category || "Food",
+      expenseDate: initial.expenseDate || today(),
+      payerId: initial.payerId || currentUser?.id,
+      participantIds: initial.participantIds || activeIds,
+      expenseId: initial.expenseId
+    };
+    expenseStatus = "";
+    if (currentGroup) renderDetail();
+    return expenseDraft;
+  }
+
+  function captureExpenseForm(form) {
+    const data = new FormData(form);
+    expenseDraft = { ...expenseDraft, amount: String(data.get("amount") || ""), description: String(data.get("description") || "").trim(), category: String(data.get("category") || "Other"), expenseDate: String(data.get("expenseDate") || ""), payerId: String(data.get("payerId") || ""), participantIds: data.getAll("participantIds").map(String) };
+  }
+
+  async function submitExpense() {
+    if (expenseSubmission) return expenseSubmission;
+    if (!expenseDraft) throw new Error("Open an expense before submitting");
+    expenseSubmission = (async () => {
+      try {
+        const amountMinor = parseMinorUnits(expenseDraft.amount);
+        const activeIds = (currentGroup?.group_members || expenseDraft.participantIds.map((userId) => ({ user_id: userId, status: "active" }))).filter((member) => member.status === "active").map((member) => member.user_id);
+        const errors = validateExpenseDraft({ amountMinor, payerId: expenseDraft.payerId, participantIds: expenseDraft.participantIds, description: expenseDraft.description, category: expenseDraft.category, date: expenseDraft.expenseDate }, activeIds);
+        if (errors.length) throw new Error(errors[0]);
+        const payload = { ...expenseDraft, amountMinor, participantShares: allocateEqualShares(amountMinor, expenseDraft.participantIds), date: expenseDraft.expenseDate, currency: currentGroup?.currency };
+        const result = expenseDraft.expenseId && repository.updateExpense ? await repository.updateExpense(payload) : await repository.saveExpense(payload);
+        expenseDraft = null;
+        expenseStatus = "";
+        if (currentGroup?.id && repository.getGroup) await openGroup(currentGroup.id);
+        return result;
+      } catch (error) {
+        expenseStatus = `${error.message}. Your entry is still here—retry when ready.`;
+        if (currentGroup) renderDetail();
+        throw error;
+      } finally { expenseSubmission = null; }
+    })();
+    return expenseSubmission;
+  }
+
+  async function editExpense(expenseId) {
+    const expense = currentGroup?.group_expenses?.find((item) => item.id === expenseId);
+    if (!expense) throw new Error("Expense not found");
+    const allowed = expense.created_by === currentUser?.id || currentGroup.owner_id === currentUser?.id;
+    if (!allowed) throw new Error("You cannot edit this expense");
+    const participants = expense.expense_participants || [];
+    return openExpense({ groupId: currentGroup.id, expenseId, idempotencyKey: expense.idempotency_key || uuid(), amount: (expense.amount_minor / 100).toFixed(2), description: expense.description, category: expense.category, expenseDate: expense.expense_date, payerId: expense.payer_id, participantIds: participants.map((item) => item.member_id) });
+  }
+
+  async function deleteExpense() {
+    if (!expenseDraft?.expenseId) return;
+    if (typeof confirmState === "function" && !confirmState("Delete this shared expense? The history record will be retained.")) return;
+    await repository.deleteExpense(expenseDraft.expenseId);
+    expenseDraft = null;
+    return openGroup(currentGroup.id);
   }
 
   async function loadGroups() {
@@ -90,11 +181,21 @@ export function createGroupsController({ repository, auth, root, navigatorState 
     if (target.matches("[data-show-personal]")) return showPersonal();
     if (target.matches("[data-groups-back], [data-groups-retry]")) return loadGroups();
     if (target.matches("[data-group-id]")) return openGroup(target.dataset.groupId);
+    if (target.matches("[data-expense-open]")) return openExpense();
+    if (target.matches("[data-expense-close]")) { expenseDraft = null; expenseStatus = ""; return renderDetail(); }
+    if (target.matches("[data-expense-edit]")) return editExpense(target.dataset.expenseEdit);
+    if (target.matches("[data-expense-delete]")) return deleteExpense();
     if (target.matches("[data-group-create-open]")) { const form = root.querySelector("[data-group-create]"); if (form) form.hidden = false; }
     if (target.matches("[data-close-create]")) { const form = root.querySelector("[data-group-create]"); if (form) form.hidden = true; }
   });
 
   root.addEventListener?.("submit", async (event) => {
+    if (event.target.matches?.("[data-expense-form]")) {
+      event.preventDefault();
+      captureExpenseForm(event.target);
+      try { await submitExpense(); } catch { /* Status is rendered with the preserved form. */ }
+      return;
+    }
     if (!event.target.matches?.("[data-group-create]") || submitting) return;
     event.preventDefault();
     submitting = true;
@@ -115,7 +216,11 @@ export function createGroupsController({ repository, auth, root, navigatorState 
     button.dataset.appMode === "groups" ? showGroups() : showPersonal();
   });
 
-  return { start, showGroups, showPersonal, openGroup, acceptInvite };
+  documentState?.addEventListener?.("visibilitychange", () => {
+    if (documentState.visibilityState === "visible" && currentGroup?.id && !realtimeHealthy) openGroup(currentGroup.id);
+  });
+
+  return { start, showGroups, showPersonal, openGroup, acceptInvite, openExpense, submitExpense, editExpense, deleteExpense, getExpenseDraft: () => expenseDraft };
 }
 
 async function bootstrap() {

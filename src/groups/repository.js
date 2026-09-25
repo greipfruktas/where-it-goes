@@ -188,7 +188,7 @@ export function createGroupsRepository(client) {
         .single());
     },
 
-    subscribeToGroup(groupId, onChange) {
+    subscribeToGroup(groupId, onChange, onStatus) {
       const channel = client.channel(`group:${groupId}`);
       channel
         .on("postgres_changes", { event: "*", schema: "public", table: "groups", filter: `id=eq.${groupId}` }, onChange)
@@ -197,7 +197,7 @@ export function createGroupsRepository(client) {
         .on("postgres_changes", { event: "*", schema: "public", table: "group_expenses", filter: `group_id=eq.${groupId}` }, onChange)
         .on("postgres_changes", { event: "*", schema: "public", table: "expense_participants", filter: `group_id=eq.${groupId}` }, onChange)
         .on("postgres_changes", { event: "*", schema: "public", table: "group_repayments", filter: `group_id=eq.${groupId}` }, onChange);
-      return channel.subscribe();
+      return channel.subscribe(onStatus);
     }
   };
 }
