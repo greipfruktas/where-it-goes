@@ -5,6 +5,14 @@ function rootStub() {
   return { hidden: true, innerHTML: "", dataset: {}, addEventListener() {} };
 }
 
+function eventTargetStub() {
+  const listeners = new Map();
+  return {
+    addEventListener(type, handler) { listeners.set(type, handler); },
+    async dispatch(type) { return listeners.get(type)?.(); }
+  };
+}
+
 {
   const calls = [];
   const root = rootStub();
@@ -107,6 +115,28 @@ function rootStub() {
     controller.openRepayment(draft);
     await assert.rejects(() => controller.submitRepayment());
   }
+  assert.equal(writes, 0);
+}
+
+{
+  const root = rootStub();
+  const network = eventTargetStub();
+  const navigatorState = { onLine: true };
+  let writes = 0;
+  const controller = createGroupsController({
+    root, navigatorState, networkState: network,
+    auth: { getSession: async () => ({ user: { id: "u1" } }) },
+    repository: {
+      getGroup: async () => ({ id: "g1", name: "Trip", status: "active", owner_id: "u1", group_members: [{ user_id: "u1", status: "active" }], group_expenses: [], group_repayments: [] }),
+      saveExpense: async () => { writes += 1; }
+    }
+  });
+  await controller.openGroup("g1");
+  navigatorState.onLine = false;
+  await network.dispatch("offline");
+  assert.match(root.innerHTML, /Offline · read-only/i);
+  assert.doesNotMatch(root.innerHTML, /data-expense-open/);
+  assert.throws(() => controller.openExpense(), /offline/i);
   assert.equal(writes, 0);
 }
 

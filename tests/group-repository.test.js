@@ -27,6 +27,9 @@ assert.equal(calls[0].args.payload.idempotency_key, "once");
 await repository.saveExpense(draft);
 assert.equal(calls[1].args.payload.idempotency_key, "once");
 
+await repository.archiveGroup("g");
+assert.deepEqual(calls[2], { name: "archive_group", args: { p_group_id: "g" } });
+
 const failedRepository = createGroupsRepository({
   rpc: async () => ({ data: null, error: { message: "Network unavailable" } })
 });

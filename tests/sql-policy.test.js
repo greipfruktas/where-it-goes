@@ -5,6 +5,10 @@ const sql = fs.readFileSync(
   new URL("../supabase/migrations/001_shared_groups.sql", import.meta.url),
   "utf8",
 );
+const upgradeSql = fs.readFileSync(
+  new URL("../supabase/migrations/002_archive_guards.sql", import.meta.url),
+  "utf8",
+);
 
 for (const table of [
   "profiles",
@@ -32,6 +36,8 @@ for (const fn of [
   "delete_group_expense",
   "save_group_repayment",
   "transfer_group_ownership",
+  "archive_group",
+  "reopen_group",
 ]) {
   assert.match(
     sql,
@@ -73,6 +79,8 @@ for (const fn of [
   "current_group_suggested_transfers",
   "save_group_repayment",
   "transfer_group_ownership",
+  "archive_group",
+  "reopen_group",
 ]) {
   assert.match(
     sql,
@@ -131,6 +139,15 @@ assert.doesNotMatch(sql, /create policy "creators or owners update expenses"/i);
 assert.doesNotMatch(sql, /create policy "creators or owners (?:insert|update|delete) expense shares"/i);
 assert.match(sql, /new owner must be an active group member/i);
 assert.match(sql, /revoke update on public\.groups from authenticated/i);
+assert.match(sql, /create or replace function public\.archive_group/i);
+assert.match(sql, /update public\.group_invites[\s\S]+is_active = false[\s\S]+revoked_at = now\(\)/i);
+assert.match(sql, /owners manage members[\s\S]+g\.status = 'active'[\s\S]+g\.archived_at is null/i);
+assert.match(sql, /owners rotate or disable invitations[\s\S]+g\.status = 'active'[\s\S]+g\.archived_at is null/i);
+assert.match(sql, /owners manage group metadata[\s\S]+status = 'active'[\s\S]+archived_at is null/i);
+assert.match(sql, /owners add members[\s\S]+g\.status = 'active'[\s\S]+g\.archived_at is null/i);
+assert.match(upgradeSql, /drop policy if exists "owners manage members"/i);
+assert.match(upgradeSql, /create or replace function public\.archive_group/i);
+assert.match(upgradeSql, /grant execute on function public\.reopen_group\(uuid\) to authenticated/i);
 
 const expenseRpc = sql.match(
   /create or replace function public\.save_group_expense[\s\S]+?revoke all on function public\.save_group_expense/i,

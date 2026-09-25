@@ -123,21 +123,11 @@ export function createGroupsRepository(client) {
     },
 
     async archiveGroup(groupId) {
-      return unwrap(await client
-        .from("groups")
-        .update({ status: "archived", archived_at: new Date().toISOString() })
-        .eq("id", groupId)
-        .select()
-        .single());
+      return unwrap(await client.rpc("archive_group", { p_group_id: groupId }));
     },
 
     async reopenGroup(groupId) {
-      return unwrap(await client
-        .from("groups")
-        .update({ status: "active", archived_at: null })
-        .eq("id", groupId)
-        .select()
-        .single());
+      return unwrap(await client.rpc("reopen_group", { p_group_id: groupId }));
     },
 
     async removeMember(groupId, memberId) {

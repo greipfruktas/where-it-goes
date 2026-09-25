@@ -469,8 +469,8 @@ with check (owner_id = auth.uid() and status = 'active' and archived_at is null)
 
 create policy "owners manage group metadata"
 on public.groups for update to authenticated
-using (public.is_group_owner(id))
-with check (public.is_active_group_member(id));
+using (public.is_group_owner(id) and status = 'active' and archived_at is null)
+with check (public.is_active_group_member(id) and status = 'active' and archived_at is null);
 
 create policy "active members read membership history"
 on public.group_members for select to authenticated
@@ -479,7 +479,13 @@ using (public.is_active_group_member(group_id));
 create policy "owners add members"
 on public.group_members for insert to authenticated
 with check (
-  public.is_group_owner(group_id)
+  (
+    public.is_group_owner(group_id)
+    and exists (
+      select 1 from public.groups as g
+      where g.id = group_id and g.status = 'active' and g.archived_at is null
+    )
+  )
   or (
     user_id = auth.uid()
     and role = 'owner'
@@ -490,8 +496,20 @@ with check (
 
 create policy "owners manage members"
 on public.group_members for update to authenticated
-using (public.is_group_owner(group_id))
-with check (public.is_group_owner(group_id));
+using (
+  public.is_group_owner(group_id)
+  and exists (
+    select 1 from public.groups as g
+    where g.id = group_id and g.status = 'active' and g.archived_at is null
+  )
+)
+with check (
+  public.is_group_owner(group_id)
+  and exists (
+    select 1 from public.groups as g
+    where g.id = group_id and g.status = 'active' and g.archived_at is null
+  )
+);
 
 create policy "owners read invitations"
 on public.group_invites for select to authenticated
@@ -509,8 +527,20 @@ with check (
 
 create policy "owners rotate or disable invitations"
 on public.group_invites for update to authenticated
-using (public.is_group_owner(group_id))
-with check (public.is_group_owner(group_id));
+using (
+  public.is_group_owner(group_id)
+  and exists (
+    select 1 from public.groups as g
+    where g.id = group_id and g.status = 'active' and g.archived_at is null
+  )
+)
+with check (
+  public.is_group_owner(group_id)
+  and exists (
+    select 1 from public.groups as g
+    where g.id = group_id and g.status = 'active' and g.archived_at is null
+  )
+);
 
 create policy "active members read expenses"
 on public.group_expenses for select to authenticated
@@ -1316,6 +1346,70 @@ begin
 end;
 $$;
 
+create or replace function public.archive_group(p_group_id uuid)
+returns public.groups
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_group public.groups%rowtype;
+begin
+  if auth.uid() is null then
+    raise exception 'Authentication required' using errcode = '42501';
+  end if;
+
+  select g.* into v_group
+  from public.groups as g
+  where g.id = p_group_id
+  for update;
+
+  if not found or v_group.owner_id <> auth.uid() or not public.is_group_owner(p_group_id) then
+    raise exception 'Only the active group owner may archive this group' using errcode = '42501';
+  end if;
+
+  update public.group_invites
+  set is_active = false, revoked_at = now()
+  where group_id = p_group_id and is_active = true;
+
+  update public.groups
+  set status = 'archived', archived_at = now()
+  where id = p_group_id
+  returning * into v_group;
+  return v_group;
+end;
+$$;
+
+create or replace function public.reopen_group(p_group_id uuid)
+returns public.groups
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_group public.groups%rowtype;
+begin
+  if auth.uid() is null then
+    raise exception 'Authentication required' using errcode = '42501';
+  end if;
+
+  select g.* into v_group
+  from public.groups as g
+  where g.id = p_group_id
+  for update;
+
+  if not found or v_group.owner_id <> auth.uid() or not public.is_group_owner(p_group_id) then
+    raise exception 'Only the active group owner may reopen this group' using errcode = '42501';
+  end if;
+
+  update public.groups
+  set status = 'active', archived_at = null
+  where id = p_group_id
+  returning * into v_group;
+  return v_group;
+end;
+$$;
+
 -- Browser roles can read financial rows through RLS but cannot mutate them
 -- directly. Expense create/edit/delete is transactional through the RPCs above.
 revoke insert, update, delete on public.group_expenses from authenticated;
@@ -1324,7 +1418,7 @@ revoke insert, update, delete on public.expense_participants from authenticated;
 -- Metadata remains owner-editable, but owner_id is only writable by the
 -- transfer_group_ownership RPC after locking and validating the new owner.
 revoke update on public.groups from authenticated;
-grant update (name, icon, currency, starts_on, ends_on, status, archived_at)
+grant update (name, icon, currency, starts_on, ends_on)
   on public.groups to authenticated;
 
 revoke all on function public.handle_new_user() from public;
@@ -1345,6 +1439,8 @@ revoke all on function public.delete_group_expense(uuid) from public;
 revoke all on function public.current_group_suggested_transfers(uuid) from public;
 revoke all on function public.save_group_repayment(jsonb) from public;
 revoke all on function public.transfer_group_ownership(uuid, uuid) from public;
+revoke all on function public.archive_group(uuid) from public;
+revoke all on function public.reopen_group(uuid) from public;
 
 grant execute on function public.is_active_group_member(uuid) to authenticated;
 grant execute on function public.is_group_owner(uuid) to authenticated;
@@ -1358,3 +1454,5 @@ grant execute on function public.delete_group_expense(uuid) to authenticated;
 grant execute on function public.current_group_suggested_transfers(uuid) to authenticated;
 grant execute on function public.save_group_repayment(jsonb) to authenticated;
 grant execute on function public.transfer_group_ownership(uuid, uuid) to authenticated;
+grant execute on function public.archive_group(uuid) to authenticated;
+grant execute on function public.reopen_group(uuid) to authenticated;

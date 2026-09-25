@@ -48,6 +48,15 @@ const archived = renderGroupShell({ state: "detail", group: { id: "g", name: "Ol
 assert.match(archived, /Archived/);
 assert.doesNotMatch(archived, /data-expense-open/);
 assert.doesNotMatch(archived, /data-expense-edit/);
+assert.match(archived, /data-group-reopen/);
+assert.doesNotMatch(archived, /data-invite-disable/);
+assert.doesNotMatch(archived, /data-member-remove/);
+assert.doesNotMatch(archived, /data-owner-transfer/);
+
+const offlineDetail = renderGroupShell({ state: "detail", offline: true, group: { id: "g", name: "Trip", status: "active", owner_id: "u1", group_members: members, group_expenses: [] }, currentUserId: "u1" });
+assert.match(offlineDetail, /Offline · read-only/i);
+assert.doesNotMatch(offlineDetail, /data-expense-open/);
+assert.doesNotMatch(offlineDetail, /data-member-remove/);
 
 assert.equal(renderOwnerSettings({ owner_id: "owner", group_members: members }, "u2"), "");
 const ownerControls = renderOwnerSettings({ id: "g", owner_id: "u1", status: "active", group_members: members, group_invites: [] }, "u1");

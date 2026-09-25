@@ -9,7 +9,7 @@ function joinedGroupId(joined) {
   return joined?.group_id || joined?.groupId || joined?.id;
 }
 
-export function createGroupsController({ repository, auth, root, navigatorState = globalThis.navigator, locationState = globalThis.location, historyState = globalThis.history, documentState = globalThis.document, confirmState = globalThis.confirm, personalRoot = null, modeRoot = null, uuid = () => globalThis.crypto.randomUUID(), today = () => new Date().toLocaleDateString("en-CA") }) {
+export function createGroupsController({ repository, auth, root, navigatorState = globalThis.navigator, networkState = globalThis, locationState = globalThis.location, historyState = globalThis.history, documentState = globalThis.document, confirmState = globalThis.confirm, personalRoot = null, modeRoot = null, uuid = () => globalThis.crypto.randomUUID(), today = () => new Date().toLocaleDateString("en-CA") }) {
   let submitting = false;
   let expenseSubmission = null;
   let currentGroup = null;
@@ -47,7 +47,7 @@ export function createGroupsController({ repository, auth, root, navigatorState 
   }
 
   function renderDetail() {
-    render({ state: "detail", group: currentGroup, currentUserId: currentUser?.id, today: today(), expenseDraft, expenseStatus, repaymentDraft, repaymentStatus, netBalances: groupNetBalances(), inviteLink: currentInviteLink });
+    render({ state: "detail", offline: navigatorState?.onLine === false, group: currentGroup, currentUserId: currentUser?.id, today: today(), expenseDraft, expenseStatus, repaymentDraft, repaymentStatus, netBalances: groupNetBalances(), inviteLink: currentInviteLink });
   }
 
   function groupNetBalances() {
@@ -67,6 +67,7 @@ export function createGroupsController({ repository, auth, root, navigatorState 
   }
 
   function openExpense(initial = {}) {
+    if (navigatorState?.onLine === false) throw new Error("Shared groups are offline and read-only");
     if (currentGroup?.status === "archived") throw new Error("This group is archived and read-only");
     const activeIds = (currentGroup?.group_members || []).filter((member) => member.status === "active").map((member) => member.user_id);
     expenseDraft = {
@@ -91,6 +92,7 @@ export function createGroupsController({ repository, auth, root, navigatorState 
   }
 
   async function submitExpense() {
+    assertWritableGroup();
     if (expenseSubmission) return expenseSubmission;
     if (!expenseDraft) throw new Error("Open an expense before submitting");
     expenseSubmission = (async () => {
@@ -115,6 +117,7 @@ export function createGroupsController({ repository, auth, root, navigatorState 
   }
 
   async function editExpense(expenseId) {
+    assertWritableGroup();
     const expense = currentGroup?.group_expenses?.find((item) => item.id === expenseId);
     if (!expense) throw new Error("Expense not found");
     const allowed = expense.created_by === currentUser?.id || currentGroup.owner_id === currentUser?.id;
@@ -124,6 +127,7 @@ export function createGroupsController({ repository, auth, root, navigatorState 
   }
 
   async function deleteExpense() {
+    assertWritableGroup();
     if (!expenseDraft?.expenseId) return;
     if (typeof confirmState === "function" && !confirmState("Delete this shared expense? The history record will be retained.")) return;
     await repository.deleteExpense(expenseDraft.expenseId);
@@ -132,6 +136,7 @@ export function createGroupsController({ repository, auth, root, navigatorState 
   }
 
   function openRepayment(initial = {}) {
+    assertWritableGroup();
     if (currentGroup?.status === "archived") throw new Error("This group is archived and read-only");
     repaymentDraft = { groupId: initial.groupId || currentGroup?.id, idempotencyKey: initial.idempotencyKey || uuid(), payerId: initial.payerId || "", recipientId: initial.recipientId || "", amount: initial.amount ?? (Number.isSafeInteger(initial.amountMinor) ? (initial.amountMinor / 100).toFixed(2) : ""), date: initial.date || today() };
     repaymentStatus = "";
@@ -145,6 +150,7 @@ export function createGroupsController({ repository, auth, root, navigatorState 
   }
 
   async function submitRepayment() {
+    assertWritableGroup();
     if (repaymentSubmission) return repaymentSubmission;
     if (!repaymentDraft) throw new Error("Open a repayment before submitting");
     repaymentSubmission = (async () => {
@@ -169,6 +175,7 @@ export function createGroupsController({ repository, auth, root, navigatorState 
   }
 
   async function removeMember(memberId) {
+    assertWritableGroup();
     if (!confirmState?.("Remove this member from the group? They will immediately lose access.")) return null;
     try {
       const result = await repository.removeMember(currentGroup.id, memberId);
@@ -181,6 +188,7 @@ export function createGroupsController({ repository, auth, root, navigatorState 
   }
 
   async function rotateInvite() {
+    assertWritableGroup();
     if (!confirmState?.("Create a new invitation link? Any previous link will stop working.")) return null;
     const invite = await repository.rotateInvite(currentGroup.id);
     currentInviteLink = `${locationState?.origin || globalThis.location?.origin || ""}${locationState?.pathname || "/"}?invite=${encodeURIComponent(invite.token)}`;
@@ -189,6 +197,7 @@ export function createGroupsController({ repository, auth, root, navigatorState 
   }
 
   async function disableInvite() {
+    assertWritableGroup();
     const active = currentGroup?.group_invites?.find((invite) => invite.is_active);
     if (!active || !confirmState?.("Disable the current invitation link?")) return null;
     const result = await repository.disableInvite(active.id);
@@ -198,6 +207,7 @@ export function createGroupsController({ repository, auth, root, navigatorState 
   }
 
   async function archiveGroup() {
+    assertWritableGroup();
     if (!confirmState?.("Archive this group? Expenses, repayments and invitations will become read-only.")) return null;
     const result = await repository.archiveGroup(currentGroup.id);
     currentInviteLink = "";
@@ -207,6 +217,7 @@ export function createGroupsController({ repository, auth, root, navigatorState 
   }
 
   async function reopenGroup() {
+    if (navigatorState?.onLine === false) throw new Error("Shared groups are offline and read-only");
     if (!confirmState?.("Reopen this group? You will need to create a new invitation link.")) return null;
     const result = await repository.reopenGroup(currentGroup.id);
     currentInviteLink = "";
@@ -216,6 +227,7 @@ export function createGroupsController({ repository, auth, root, navigatorState 
   }
 
   async function transferOwnership(newOwnerId) {
+    assertWritableGroup();
     if (!newOwnerId) throw new Error("Choose a new owner first");
     if (!confirmState?.("Transfer ownership to this member?")) return null;
     const result = await repository.transferOwnership(currentGroup.id, newOwnerId);
@@ -228,6 +240,11 @@ export function createGroupsController({ repository, auth, root, navigatorState 
     if (navigatorState?.share) return navigatorState.share({ title: currentGroup?.name || "Shared expense group", text: `Join ${currentGroup?.name || "my group"} on Where It Goes`, url: currentInviteLink });
     if (navigatorState?.clipboard?.writeText) return navigatorState.clipboard.writeText(currentInviteLink);
     throw new Error("Copy is unavailable on this device");
+  }
+
+  function assertWritableGroup() {
+    if (navigatorState?.onLine === false) throw new Error("Shared groups are offline and read-only");
+    if (currentGroup?.status === "archived") throw new Error("This group is archived and read-only");
   }
 
   async function loadGroups() {
@@ -347,6 +364,12 @@ export function createGroupsController({ repository, auth, root, navigatorState 
   documentState?.addEventListener?.("visibilitychange", () => {
     if (documentState.visibilityState === "visible" && currentGroup?.id && !realtimeHealthy) openGroup(currentGroup.id);
   });
+
+  networkState?.addEventListener?.("offline", () => {
+    if (currentGroup?.id) renderDetail();
+    else if (!root.hidden) render({ state: "offline" });
+  });
+  networkState?.addEventListener?.("online", () => currentGroup?.id ? openGroup(currentGroup.id) : (!root.hidden && loadGroups()));
 
   return { start, showGroups, showPersonal, openGroup, acceptInvite, openExpense, submitExpense, editExpense, deleteExpense, openRepayment, submitRepayment, removeMember, rotateInvite, disableInvite, archiveGroup, reopenGroup, transferOwnership, shareInvite, getExpenseDraft: () => expenseDraft, getRepaymentDraft: () => repaymentDraft };
 }
