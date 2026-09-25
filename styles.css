@@ -45,7 +45,66 @@ body::before {
 button, input, textarea, select { font: inherit; color: inherit; }
 input, textarea, select { font-size: 16px; }
 button { cursor: pointer; }
+.app-mode-switch { position: sticky; z-index: 25; top: max(10px, env(safe-area-inset-top)); width: min(calc(100% - 40px), 300px); height: 45px; margin: max(10px, env(safe-area-inset-top)) auto 0; padding: 4px; border: 1px solid rgba(109,86,52,.14); border-radius: 999px; background: rgba(255,250,240,.82); box-shadow: 0 12px 30px rgba(77,55,30,.1); backdrop-filter: blur(18px); display: grid; grid-template-columns: 1fr 1fr; }
+.app-mode-switch button { min-height: 36px; border: 0; border-radius: 999px; background: transparent; color: var(--muted); font-size: 12px; font-weight: 900; }
+.app-mode-switch button.selected { background: var(--green); color: white; box-shadow: 0 7px 16px rgba(49,92,72,.2); }
+.app-mode-switch button:focus-visible, .groups-root button:focus-visible, .groups-root input:focus-visible { outline: 3px solid rgba(49,92,72,.28); outline-offset: 2px; }
 .app-shell { position: relative; width: min(100%, 560px); min-height: 100dvh; margin: 0 auto; padding: max(18px, env(safe-area-inset-top)) 20px calc(112px + env(safe-area-inset-bottom)); }
+.app-shell[hidden], .groups-root[hidden] { display: none; }
+.groups-root { position: relative; width: min(100%, 560px); min-height: calc(100dvh - 58px); margin: 0 auto; padding: 26px 20px calc(44px + env(safe-area-inset-bottom)); }
+.groups-state-card { min-height: min(620px, calc(100dvh - 115px)); padding: 44px 26px; border: 1px solid rgba(114,85,46,.14); border-radius: 32px; background: rgba(255,250,240,.84); box-shadow: var(--shadow); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+.groups-state-card h1 { max-width: 390px; margin-bottom: 14px; font-size: clamp(32px, 10vw, 48px); }
+.groups-state-card > p:not(.eyebrow) { max-width: 400px; color: var(--muted); line-height: 1.55; }
+.groups-state-card small { margin-top: 16px; color: var(--muted); font-size: 11px; }
+.groups-state-icon { width: 78px; height: 78px; margin-bottom: 22px; border-radius: 24px; background: var(--green-soft); display: grid; place-items: center; font-size: 38px; transform: rotate(-4deg); }
+.google-signin-button, .secondary-button, .create-group-cta { min-height: 52px; border-radius: 17px; font-weight: 900; }
+.google-signin-button { width: min(100%, 320px); margin-top: 14px; border: 0; background: var(--ink); color: white; display: flex; align-items: center; justify-content: center; gap: 12px; box-shadow: 0 14px 28px rgba(45,38,28,.18); }
+.google-signin-button span { width: 28px; height: 28px; border-radius: 50%; background: white; color: #4285f4; display: grid; place-items: center; font: 900 15px Arial; }
+.secondary-button { padding: 0 22px; border: 1px solid var(--line); background: var(--card); color: var(--green); }
+.groups-loader { width: 42px; height: 42px; margin-bottom: 22px; border: 4px solid var(--green-soft); border-top-color: var(--green); border-radius: 50%; animation: groups-spin .8s linear infinite; }
+@keyframes groups-spin { to { transform: rotate(360deg); } }
+.groups-page-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 22px; }
+.groups-page-header h1 { font-size: 38px; }
+.groups-header-actions { display: flex; gap: 8px; }
+.round-action, .avatar-button, .group-back-button { min-width: 44px; min-height: 44px; border: 1px solid rgba(109,86,52,.16); background: var(--card); color: var(--green); font-weight: 950; box-shadow: 0 8px 20px rgba(77,55,30,.08); }
+.round-action, .avatar-button { border-radius: 50%; }
+.round-action { font-size: 24px; }
+.avatar-button { background: var(--green); color: white; }
+.shared-group-list { display: grid; gap: 10px; }
+.shared-group-card { width: 100%; min-height: 78px; padding: 13px; border: 1px solid rgba(114,85,46,.13); border-radius: 22px; background: rgba(255,250,240,.88); color: var(--ink); box-shadow: 0 10px 25px rgba(87,62,34,.07); display: grid; grid-template-columns: 50px minmax(0,1fr) auto 22px; align-items: center; gap: 12px; text-align: left; }
+.shared-group-card:active { transform: var(--pressed); }
+.shared-group-icon { width: 50px; height: 50px; border-radius: 17px; background: var(--green-soft); display: grid; place-items: center; font-size: 25px; }
+.shared-group-copy { min-width: 0; display: grid; gap: 5px; }
+.shared-group-copy strong { overflow: hidden; font-size: 16px; text-overflow: ellipsis; white-space: nowrap; }
+.shared-group-copy small, .shared-group-currency { color: var(--muted); font-size: 11px; font-weight: 800; }
+.shared-group-arrow { color: var(--green); font-size: 18px; }
+.groups-empty { min-height: 300px; padding: 34px 24px; border: 1px dashed rgba(114,85,46,.24); border-radius: 27px; display: grid; place-items: center; align-content: center; text-align: center; }
+.groups-empty > span { font-size: 46px; }
+.groups-empty h2 { margin-top: 14px; }
+.groups-empty p { max-width: 310px; margin: 8px 0 0; color: var(--muted); line-height: 1.5; }
+.create-group-cta { width: 100%; margin-top: 18px; padding: 0 18px; border: 0; background: var(--green); color: white; display: flex; align-items: center; justify-content: space-between; }
+.create-group-cta span { font-size: 20px; }
+.group-create-form { margin-bottom: 18px; padding: 20px; border: 1px solid rgba(114,85,46,.15); border-radius: 25px; background: var(--card); box-shadow: var(--shadow); display: grid; gap: 14px; }
+.group-create-form[hidden] { display: none; }
+.group-form-heading { display: flex; align-items: center; justify-content: space-between; }
+.group-create-form label { display: grid; gap: 7px; color: var(--muted); font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: .08em; }
+.group-create-form label em { font-weight: 700; text-transform: none; letter-spacing: 0; }
+.group-create-form input { width: 100%; min-height: 50px; padding: 0 13px; border: 1px solid var(--line); border-radius: 15px; background: rgba(255,255,255,.55); font-size: 16px; }
+.group-name-row { display: grid; grid-template-columns: 76px 1fr; gap: 10px; }
+.group-name-row label:first-child input { padding: 0; text-align: center; font-size: 23px; }
+.group-date-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.group-create-form .save-button { width: 100%; }
+.group-back-button { margin-bottom: 18px; padding: 0 15px; border-radius: 999px; }
+.group-hero { padding: 25px; border-radius: 29px; background: var(--green); color: white; display: flex; align-items: center; gap: 18px; box-shadow: 0 20px 42px rgba(49,92,72,.24); }
+.group-hero .eyebrow, .group-hero p { color: rgba(255,255,255,.72); }
+.group-hero h1 { margin-bottom: 8px; }
+.group-hero-icon { width: 66px; height: 66px; flex: 0 0 auto; border-radius: 21px; background: rgba(255,255,255,.16); display: grid; place-items: center; font-size: 33px; }
+.group-coming-next { margin-top: 16px; padding: 24px; border: 1px solid var(--line); border-radius: 23px; background: var(--card); }
+.group-coming-next p { margin-bottom: 6px; color: var(--muted); font-size: 12px; font-weight: 800; }
+body[data-style="neon"] .app-mode-switch, body[data-style="neon"] .groups-state-card, body[data-style="neon"] .shared-group-card, body[data-style="neon"] .group-create-form, body[data-style="neon"] .group-coming-next { background: rgba(24,29,53,.9); border-color: rgba(135,150,230,.2); }
+body[data-style="neon"] .app-mode-switch button.selected, body[data-style="neon"] .create-group-cta, body[data-style="neon"] .group-hero { background: linear-gradient(145deg, #6cf4d2, #9b7cff); color: #0d1021; }
+body[data-style="swiss"] .app-mode-switch, body[data-style="swiss"] .groups-state-card, body[data-style="swiss"] .shared-group-card, body[data-style="swiss"] .group-create-form, body[data-style="swiss"] .group-hero, body[data-style="swiss"] .group-coming-next { border-radius: 8px; box-shadow: none; }
+@media (prefers-reduced-motion: reduce) { .groups-loader { animation: none; } }
 .topbar { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin: 12px 0 22px; }
 .eyebrow { margin: 0 0 5px; color: var(--green); font-size: 11px; font-weight: 900; letter-spacing: .16em; }
 h1, h2, p { margin-top: 0; }
