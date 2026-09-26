@@ -3,7 +3,7 @@ const GROUPS_KEY = "where-it-goes-groups-v1";
 const STYLE_KEY = "where-it-goes-style-v1";
 const styleOptions = {
   pocket: { label: "A", themeColor: "#f3ecdc" },
-  neon: { label: "B", themeColor: "#111426" },
+  neon: { label: "B", themeColor: "#151714" },
   swiss: { label: "C", themeColor: "#f7f7f2" }
 };
 

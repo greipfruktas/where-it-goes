@@ -13,7 +13,12 @@ assert.match(html, /id="styleButton"/, "header should include a style menu butto
 assert.match(html, /data-style-option="pocket"/, "style menu should include Option A");
 assert.match(html, /data-style-option="neon"/, "style menu should include Option B");
 assert.match(html, /data-style-option="swiss"/, "style menu should include Option C");
-assert.match(css, /body\[data-style="neon"\]/, "Option B should have a Neon Night theme hook");
+assert.match(html, /Option B <span>Midnight Ledger<\/span>/, "Option B should be the calm dark theme");
+assert.doesNotMatch(html, /Neon Night/, "the old neon theme name should be removed");
+assert.match(css, /body\[data-style="neon"\]\s*\{[^}]*--paper:\s*#151714/s, "Option B should use a charcoal Midnight Ledger background");
+assert.match(css, /body\[data-style="neon"\]\s*\{[^}]*--green:\s*#a8c3a1/s, "Midnight Ledger should use a muted sage accent");
+assert.doesNotMatch(css, /#6cf4d2|#9b7cff|#ff5f9e|#702bff/i, "the neon accent palette should be removed");
+assert.match(css, /body\[data-style="neon"\] \.group-expense-form[\s\S]*?background:/, "shared expense forms should receive the dark surface treatment");
 assert.match(css, /body\[data-style="swiss"\]/, "Option C should have a Minimal Swiss theme hook");
 assert.match(js, /STYLE_KEY/, "selected style should be saved separately from expenses");
 assert.match(js, /function applyAppStyle/, "style selection should be applied through a named helper");
