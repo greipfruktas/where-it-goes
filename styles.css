@@ -379,6 +379,7 @@ body[data-style="neon"] {
   --shadow: 0 20px 50px rgba(0,0,0,.3);
 }
 body[data-style="neon"] {
+  color: var(--ink);
   background:
     radial-gradient(circle at 18% -8%, rgba(168,195,161,.12), transparent 30rem),
     radial-gradient(circle at 92% 18%, rgba(201,172,114,.08), transparent 23rem),
@@ -407,6 +408,8 @@ body[data-style="neon"] .date-range-card,
 body[data-style="neon"] .date-display { background: rgba(29,33,29,.94); border-color: rgba(168,195,161,.16); color: var(--ink); }
 body[data-style="neon"] .period-switch button.selected { background: rgba(168,195,161,.14); color: var(--green); }
 body[data-style="neon"] .sheet { background: linear-gradient(180deg, #242a24, #151714); }
+body[data-style="neon"] .empty-state { background: rgba(29,33,29,.72); border-color: rgba(168,195,161,.16); }
+body[data-style="neon"] .toast { background: #f1eee6; color: #151714; }
 body[data-style="neon"] .group-expense-form,
 body[data-style="neon"] .group-repayment-form,
 body[data-style="neon"] .settlement-section,

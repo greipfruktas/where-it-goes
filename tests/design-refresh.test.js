@@ -19,6 +19,9 @@ assert.match(css, /body\[data-style="neon"\]\s*\{[^}]*--paper:\s*#151714/s, "Opt
 assert.match(css, /body\[data-style="neon"\]\s*\{[^}]*--green:\s*#a8c3a1/s, "Midnight Ledger should use a muted sage accent");
 assert.doesNotMatch(css, /#6cf4d2|#9b7cff|#ff5f9e|#702bff/i, "the neon accent palette should be removed");
 assert.match(css, /body\[data-style="neon"\] \.group-expense-form[\s\S]*?background:/, "shared expense forms should receive the dark surface treatment");
+assert.match(css, /body\[data-style="neon"\]\s*\{[^}]*color:\s*var\(--ink\)/s, "dark theme should explicitly apply its text color to the body");
+assert.match(css, /body\[data-style="neon"\] \.empty-state\s*\{[^}]*background:/s, "empty states should use a dark surface instead of the light theme card");
+assert.match(css, /body\[data-style="neon"\] \.toast\s*\{[^}]*color:\s*#151714/s, "dark-theme confirmation toast should remain readable");
 assert.match(css, /body\[data-style="swiss"\]/, "Option C should have a Minimal Swiss theme hook");
 assert.match(js, /STYLE_KEY/, "selected style should be saved separately from expenses");
 assert.match(js, /function applyAppStyle/, "style selection should be applied through a named helper");
