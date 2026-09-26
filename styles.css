@@ -91,7 +91,7 @@ button { cursor: pointer; }
 .group-form-heading { display: flex; align-items: center; justify-content: space-between; }
 .group-create-form label { display: grid; gap: 7px; color: var(--muted); font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: .08em; }
 .group-create-form label em { font-weight: 700; text-transform: none; letter-spacing: 0; }
-.group-create-form input { width: 100%; min-height: 50px; padding: 0 13px; border: 1px solid var(--line); border-radius: 15px; background: rgba(255,255,255,.55); font-size: 16px; }
+.group-create-form input { width: 100%; max-width: 100%; min-width: 0; min-height: 50px; padding: 0 13px; border: 1px solid var(--line); border-radius: 15px; background: rgba(255,255,255,.55); font-size: 16px; }
 .group-name-row { display: grid; grid-template-columns: 76px 1fr; gap: 10px; }
 .group-name-row label:first-child input { padding: 0; text-align: center; font-size: 23px; }
 .group-date-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
@@ -119,13 +119,22 @@ button { cursor: pointer; }
 .group-activity-item > button { width: 34px; height: 44px; border: 0; background: transparent; color: var(--muted); }
 .group-expense-form { margin-top: 16px; padding: 20px; border: 1px solid rgba(114,85,46,.15); border-radius: 25px; background: var(--card); box-shadow: var(--shadow); display: grid; gap: 14px; }
 .expense-form-head { display: flex; align-items: center; justify-content: space-between; }
-.group-expense-form > label, .group-expense-form .group-date-row label { display: grid; gap: 7px; color: var(--muted); font-size: 11px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
-.group-expense-form input, .group-expense-form select { width: 100%; min-height: 50px; padding: 0 13px; border: 1px solid var(--line); border-radius: 15px; background: rgba(255,255,255,.55); font-size: 16px; }
+.group-expense-form > label, .group-expense-form .group-date-row label { min-width: 0; display: grid; gap: 7px; color: var(--muted); font-size: 11px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
+.group-expense-form input, .group-expense-form select { width: 100%; max-width: 100%; min-width: 0; min-height: 50px; padding: 0 13px; border: 1px solid var(--line); border-radius: 15px; background: rgba(255,255,255,.55); font-size: 16px; }
 .shared-amount-field { position: relative; }
 .shared-amount-field > span { position: absolute; z-index: 1; left: 15px; bottom: 13px; color: var(--green); font-size: 20px; }
 .shared-amount-field input { padding-left: 39px; font-size: 24px; font-weight: 900; }
 .group-expense-form fieldset { margin: 0; padding: 0; border: 0; }
 .group-expense-form legend { margin-bottom: 8px; color: var(--muted); font-size: 11px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
+.category-picker { display: grid; grid-template-columns: repeat(5, minmax(0,1fr)); gap: 7px; }
+.category-picker label { min-width: 0; position: relative; }
+.category-picker input { position: absolute; width: 1px; height: 1px; min-height: 0; opacity: 0; pointer-events: none; }
+.category-picker span { min-height: 67px; padding: 8px 3px; border: 1px solid var(--line); border-radius: 16px; background: rgba(255,255,255,.45); display: grid; place-items: center; align-content: center; gap: 4px; color: var(--muted); text-align: center; transition: border-color .16s ease, background .16s ease, transform .16s ease; }
+.category-picker b { font-size: 23px; line-height: 1; }
+.category-picker small { max-width: 100%; overflow: hidden; font-size: 9px; font-weight: 850; letter-spacing: -.01em; text-overflow: ellipsis; text-transform: none; }
+.category-picker input:checked + span { border-color: var(--green); background: var(--green-soft); color: var(--green); box-shadow: inset 0 0 0 1px var(--green); }
+.category-picker label:active span { transform: var(--pressed); }
+.category-picker input:focus-visible + span { outline: 3px solid rgba(49,92,72,.25); outline-offset: 2px; }
 .participant-grid { display: flex; flex-wrap: wrap; gap: 8px; }
 .participant-grid label { position: relative; }
 .participant-grid input { position: absolute; opacity: 0; pointer-events: none; }
@@ -148,7 +157,7 @@ button { cursor: pointer; }
 .all-settled small { color: var(--muted); }
 .group-repayment-form { margin-top: 16px; padding: 20px; border: 1px solid rgba(114,85,46,.15); border-radius: 25px; background: var(--card); box-shadow: var(--shadow); display: grid; gap: 14px; }
 .group-repayment-form label { display: grid; gap: 7px; color: var(--muted); font-size: 11px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
-.group-repayment-form input, .group-repayment-form select { width: 100%; min-height: 50px; padding: 0 13px; border: 1px solid var(--line); border-radius: 15px; background: rgba(255,255,255,.55); font-size: 16px; }
+.group-repayment-form input, .group-repayment-form select { width: 100%; max-width: 100%; min-width: 0; min-height: 50px; padding: 0 13px; border: 1px solid var(--line); border-radius: 15px; background: rgba(255,255,255,.55); font-size: 16px; }
 .repayment-people { display: grid; grid-template-columns: minmax(0,1fr) 24px minmax(0,1fr); align-items: end; gap: 7px; }
 .repayment-people > span { min-height: 50px; display: grid; place-items: center; color: var(--green); font-weight: 950; }
 .group-repayment-form .save-button { width: 100%; }
@@ -450,4 +459,13 @@ body[data-style="swiss"] .style-button b { border-radius: 6px; background: #1111
 body[data-style="swiss"] .add-button { border-color: var(--paper); border-radius: 10px; background: var(--coral); box-shadow: none; }
 body[data-style="swiss"] .progress span { background: #11110f; }
 @media (min-width: 700px) { .sheet { bottom: 24px; border-radius: 29px; } }
+@media (max-width: 430px) {
+  .groups-root { padding-inline: 14px; }
+  .group-create-form, .group-expense-form, .group-repayment-form { padding: 17px; }
+  .group-date-row { grid-template-columns: 1fr; }
+  .repayment-people { grid-template-columns: 1fr; }
+  .repayment-people > span { min-height: 22px; transform: rotate(90deg); }
+  .category-picker { grid-template-columns: repeat(3, minmax(0,1fr)); }
+  .category-picker span { min-height: 64px; }
+}
 @media (max-width: 370px) { .choice-grid { grid-template-columns: repeat(3, 1fr); } .bottom-nav { padding-inline: 38px; } }

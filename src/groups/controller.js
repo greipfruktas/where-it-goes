@@ -95,7 +95,13 @@ export function createGroupsController({ repository, auth, root, navigatorState 
     assertWritableGroup();
     if (expenseSubmission) return expenseSubmission;
     if (!expenseDraft) throw new Error("Open an expense before submitting");
-    expenseSubmission = (async () => {
+    let resolveSubmission;
+    let rejectSubmission;
+    expenseSubmission = new Promise((resolve, reject) => {
+      resolveSubmission = resolve;
+      rejectSubmission = reject;
+    });
+    const runSubmission = (async () => {
       try {
         const amountMinor = parseMinorUnits(expenseDraft.amount);
         const activeIds = (currentGroup?.group_members || expenseDraft.participantIds.map((userId) => ({ user_id: userId, status: "active" }))).filter((member) => member.status === "active").map((member) => member.user_id);
@@ -111,8 +117,9 @@ export function createGroupsController({ repository, auth, root, navigatorState 
         expenseStatus = `${error.message}. Your entry is still here—retry when ready.`;
         if (currentGroup) renderDetail();
         throw error;
-      } finally { expenseSubmission = null; }
+      }
     })();
+    runSubmission.then(resolveSubmission, rejectSubmission).finally(() => { expenseSubmission = null; });
     return expenseSubmission;
   }
 
@@ -358,6 +365,17 @@ export function createGroupsController({ repository, auth, root, navigatorState 
     } catch (error) {
       render({ state: "invite-error", message: error.message });
     } finally { submitting = false; }
+  });
+
+  root.addEventListener?.("change", (event) => {
+    const form = event.target.closest?.("[data-expense-form]");
+    if (!form) return;
+    captureExpenseForm(form);
+    if (!expenseStatus) return;
+    expenseStatus = "";
+    form.querySelector?.(".expense-form-status")?.remove();
+    const button = form.querySelector?.("[type=submit]");
+    if (button) button.textContent = "Save expense";
   });
 
   modeRoot?.addEventListener?.("click", (event) => {

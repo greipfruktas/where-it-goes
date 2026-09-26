@@ -222,6 +222,27 @@ function eventTargetStub() {
   let writes = 0;
   const controller = createGroupsController({
     root,
+    navigatorState: { onLine: true },
+    uuid: () => "validation-retry",
+    auth: { getSession: async () => ({ user: { id: "u1" } }) },
+    repository: {
+      saveExpense: async () => { writes += 1; return { id: "e1" }; },
+      getGroup: async () => ({ id: "g1", owner_id: "u1", currency: "EUR", group_members: [{ user_id: "u1", status: "active" }], group_expenses: [], group_repayments: [] })
+    }
+  });
+  await controller.openGroup("g1");
+  controller.openExpense({ amount: "8.00", description: "Lunch", category: "Food", payerId: "u1", participantIds: [], expenseDate: "2026-09-25" });
+  await assert.rejects(() => controller.submitExpense(), /participant/i);
+  controller.openExpense({ ...controller.getExpenseDraft(), participantIds: ["u1"] });
+  await controller.submitExpense();
+  assert.equal(writes, 1);
+}
+
+{
+  const root = rootStub();
+  let writes = 0;
+  const controller = createGroupsController({
+    root,
     navigatorState: { onLine: false },
     auth: { consumeAuthReturn: async () => null, getSession: async () => ({ user: { id: "u1" } }) },
     repository: { listGroups: async () => { writes += 1; return []; } }

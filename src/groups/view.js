@@ -82,11 +82,20 @@ export function renderExpenseForm({ members = [], currentUserId, today, draft = 
   const active = members.filter((member) => member.status === "active");
   const participants = new Set(draft.participantIds || active.map((member) => member.user_id));
   const payerId = draft.payerId || currentUserId;
+  const categories = [
+    { name: "Food", icon: "🍽️" },
+    { name: "Transport", icon: "🚕" },
+    { name: "House", icon: "🏠" },
+    { name: "Tickets", icon: "🎟️" },
+    { name: "Other", icon: "✨" }
+  ];
+  const selectedCategory = draft.category || "Food";
   return `<form class="group-expense-form" data-expense-form>
     <div class="expense-form-head"><div><p class="eyebrow">${draft.expenseId ? "EDIT EXPENSE" : "NEW SHARED EXPENSE"}</p><h2>Who paid for what?</h2></div><button class="close-button" type="button" data-expense-close aria-label="Close">×</button></div>
     <label class="shared-amount-field"><span>€</span><input name="amount" inputmode="decimal" value="${escapeGroupHTML(draft.amount || "")}" placeholder="0.00" aria-label="Amount" required></label>
     <label><span>Description</span><input name="description" value="${escapeGroupHTML(draft.description || "")}" maxlength="80" placeholder="Dinner, taxi, tickets…" required></label>
-    <div class="group-date-row"><label><span>Category</span><select name="category">${["Food", "Transport", "House", "Tickets", "Other"].map((category) => `<option${draft.category === category ? " selected" : ""}>${category}</option>`).join("")}</select></label><label><span>Date</span><input type="date" name="expenseDate" value="${escapeGroupHTML(draft.expenseDate || today || "")}" required></label></div>
+    <fieldset class="category-field"><legend>Category</legend><div class="category-picker">${categories.map((category) => `<label><input type="radio" name="category" value="${category.name}"${selectedCategory === category.name ? " checked" : ""}><span><b aria-hidden="true">${category.icon}</b><small>${category.name}</small></span></label>`).join("")}</div></fieldset>
+    <label><span>Date</span><input type="date" name="expenseDate" value="${escapeGroupHTML(draft.expenseDate || today || "")}" required></label>
     <label><span>Paid by</span><select name="payerId">${active.map((member) => `<option value="${escapeGroupHTML(member.user_id)}"${member.user_id === payerId ? " selected" : ""}>${escapeGroupHTML(memberName(member))}</option>`).join("")}</select></label>
     <fieldset><legend>Split equally between</legend><div class="participant-grid">${active.map((member) => `<label><input type="checkbox" name="participantIds" value="${escapeGroupHTML(member.user_id)}"${participants.has(member.user_id) ? " checked" : ""}><span>${escapeGroupHTML(memberName(member))}</span></label>`).join("")}</div></fieldset>
     ${status ? `<p class="expense-form-status" role="status">${escapeGroupHTML(status)}</p>` : ""}

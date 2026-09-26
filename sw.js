@@ -1,4 +1,4 @@
-const CACHE = "where-it-goes-v22";
+const CACHE = "where-it-goes-v23";
 const ASSETS = [
   "./", "./index.html", "./privacy.html", "./styles.css", "./app.js", "./manifest.webmanifest",
   "./icons/icon-192.png", "./icons/icon-512.png",

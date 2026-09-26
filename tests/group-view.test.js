@@ -23,6 +23,14 @@ assert.match(form, /name="expenseDate"[^>]*value="2026-09-25"/);
 assert.match(form, /name="participantIds" value="u1" checked/);
 assert.match(form, /name="participantIds" value="u2" checked/);
 assert.doesNotMatch(form, /value="u3"/);
+assert.match(form, /class="category-picker"/);
+assert.match(form, /type="radio" name="category" value="Food" checked/);
+assert.match(form, /🍽️[\s\S]*Food/);
+assert.match(form, /🚕[\s\S]*Transport/);
+assert.doesNotMatch(form, /<select name="category"/);
+
+const transportForm = renderExpenseForm({ members, currentUserId: "u1", today: "2026-09-25", draft: { category: "Transport" } });
+assert.match(transportForm, /name="category" value="Transport" checked/);
 
 const activity = renderActivity([
   { id: "e1", description: "<Dinner>", category: `<img onerror="x">`, amount_minor: 1200, expense_date: "2026-09-25", payer_id: "u1", created_by: "u1" },
