@@ -377,8 +377,9 @@ export function createGroupsController({ repository, auth, root, navigatorState 
 async function bootstrap() {
   const root = document.querySelector("#groupsRoot");
   if (!root) return;
-  const [{ supabaseConfig }, supabaseModule, repositoryModule] = await Promise.all([
-    import("../../supabase/config.js"), import("./supabase.js"), import("./repository.js")
+  const [{ supabaseConfig }, supabaseModule, repositoryModule, personalRepositoryModule, personalControllerModule, personalStorageModule] = await Promise.all([
+    import("../../supabase/config.js"), import("./supabase.js"), import("./repository.js"),
+    import("../personal-sync/repository.js"), import("../personal-sync/controller.js"), import("../personal-sync/storage.js")
   ]);
   const client = supabaseModule.createGroupsClient(supabaseConfig);
   const repository = repositoryModule.createGroupsRepository(client);
@@ -390,6 +391,33 @@ async function bootstrap() {
   };
   const controller = createGroupsController({ repository, auth, root, personalRoot: document.querySelector("#personalRoot"), modeRoot: document.querySelector("#appModeSwitch") });
   globalThis.whereItGoesGroups = controller;
+  const personalSync = personalControllerModule.createPersonalSyncController({
+    repository: personalRepositoryModule.createPersonalRepository(client),
+    storage: personalStorageModule.createPersonalStorage(localStorage),
+    personalData: globalThis.whereItGoesPersonalData
+  });
+  globalThis.whereItGoesPersonalSync = personalSync;
+  const accountButton = document.querySelector("#personalAccountButton");
+  const applySession = async (session) => {
+    const user = session?.user;
+    accountButton.classList.toggle("signed-in", Boolean(user));
+    accountButton.textContent = user ? (user.user_metadata?.full_name || user.email || "A").slice(0, 1).toUpperCase() : "Sign in";
+    accountButton.setAttribute("aria-label", user ? "Sign out" : "Sign in with Google");
+    if (user) await personalSync.startSession(user);
+    else personalSync.stopSession();
+  };
+  accountButton?.addEventListener("click", async () => {
+    const session = (await client.auth.getSession()).data?.session;
+    if (session) {
+      personalSync.stopSession();
+      await client.auth.signOut();
+      await applySession(null);
+    } else {
+      await supabaseModule.signInWithGoogle(`${location.pathname}?destination=personal`);
+    }
+  });
+  client.auth.onAuthStateChange((_event, session) => setTimeout(() => applySession(session).catch((error) => globalThis.whereItGoesPersonalData?.showStorageError(error.message)), 0));
+  await applySession((await client.auth.getSession()).data?.session);
   const params = new URLSearchParams(location.search);
   if (params.has("invite") || (await client.auth.getSession()).data?.session) await controller.start();
 }

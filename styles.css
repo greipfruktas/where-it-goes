@@ -49,6 +49,8 @@ button { cursor: pointer; }
 .app-mode-switch button { min-height: 36px; border: 0; border-radius: 999px; background: transparent; color: var(--muted); font-size: 12px; font-weight: 900; }
 .app-mode-switch button.selected { background: var(--green); color: white; box-shadow: 0 7px 16px rgba(49,92,72,.2); }
 .app-mode-switch button:focus-visible, .groups-root button:focus-visible, .groups-root input:focus-visible { outline: 3px solid rgba(49,92,72,.28); outline-offset: 2px; }
+.account-button { min-width: 54px; height: 42px; padding: 0 13px; border: 1px solid rgba(109,86,52,.16); border-radius: 999px; background: var(--card); color: var(--ink); font-size: 12px; font-weight: 900; box-shadow: var(--shadow-soft); }
+.account-button.signed-in { min-width: 42px; padding: 0; background: var(--green); color: white; }
 .app-shell { position: relative; width: min(100%, 560px); min-height: 100dvh; margin: 0 auto; padding: max(18px, env(safe-area-inset-top)) 20px calc(112px + env(safe-area-inset-bottom)); }
 .app-shell[hidden], .groups-root[hidden] { display: none; }
 .groups-root { position: relative; width: min(100%, 560px); min-height: calc(100dvh - 58px); margin: 0 auto; padding: 26px 20px calc(44px + env(safe-area-inset-bottom)); }
