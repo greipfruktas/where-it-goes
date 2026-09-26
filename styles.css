@@ -135,6 +135,12 @@ button { cursor: pointer; }
 .category-picker input:checked + span { border-color: var(--green); background: var(--green-soft); color: var(--green); box-shadow: inset 0 0 0 1px var(--green); }
 .category-picker label:active span { transform: var(--pressed); }
 .category-picker input:focus-visible + span { outline: 3px solid rgba(49,92,72,.25); outline-offset: 2px; }
+.group-date-field { overflow: hidden; }
+.group-date-control { position: relative; width: 100%; max-width: 100%; min-width: 0; min-height: 50px; padding: 0 14px; overflow: hidden; border: 1px solid var(--line); border-radius: 15px; background: rgba(255,255,255,.55); display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.group-date-control b { min-width: 0; overflow: hidden; color: var(--ink); font-size: 16px; font-weight: 750; letter-spacing: normal; text-overflow: ellipsis; text-transform: none; white-space: nowrap; }
+.group-date-control i { flex: 0 0 auto; color: var(--green); font-size: 13px; font-style: normal; }
+.group-date-control input { position: absolute; inset: 0; width: 100%; max-width: 100%; min-width: 0; height: 100%; min-height: 0; padding: 0; border: 0; opacity: 0; appearance: none; -webkit-appearance: none; }
+.group-date-control:focus-within { border-color: rgba(49,92,72,.46); box-shadow: 0 0 0 3px rgba(49,92,72,.12); }
 .participant-grid { display: flex; flex-wrap: wrap; gap: 8px; }
 .participant-grid label { position: relative; }
 .participant-grid input { position: absolute; opacity: 0; pointer-events: none; }
@@ -465,7 +471,9 @@ body[data-style="swiss"] .progress span { background: #11110f; }
   .group-date-row { grid-template-columns: 1fr; }
   .repayment-people { grid-template-columns: 1fr; }
   .repayment-people > span { min-height: 22px; transform: rotate(90deg); }
-  .category-picker { grid-template-columns: repeat(3, minmax(0,1fr)); }
-  .category-picker span { min-height: 64px; }
+  .category-picker { grid-template-columns: repeat(5, minmax(0,1fr)); gap: 4px; }
+  .category-picker span { min-height: 54px; padding: 6px 1px; border-radius: 13px; }
+  .category-picker b { font-size: 19px; }
+  .category-picker small { font-size: 8px; }
 }
 @media (max-width: 370px) { .choice-grid { grid-template-columns: repeat(3, 1fr); } .bottom-nav { padding-inline: 38px; } }

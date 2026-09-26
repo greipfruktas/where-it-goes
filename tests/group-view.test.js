@@ -28,6 +28,9 @@ assert.match(form, /type="radio" name="category" value="Food" checked/);
 assert.match(form, /🍽️[\s\S]*Food/);
 assert.match(form, /🚕[\s\S]*Transport/);
 assert.doesNotMatch(form, /<select name="category"/);
+assert.match(form, /class="group-date-field"/);
+assert.match(form, /class="group-date-control"/);
+assert.match(form, /data-expense-date-value/);
 
 const transportForm = renderExpenseForm({ members, currentUserId: "u1", today: "2026-09-25", draft: { category: "Transport" } });
 assert.match(transportForm, /name="category" value="Transport" checked/);
@@ -40,6 +43,13 @@ assert.match(activity, /&lt;Dinner&gt;/);
 assert.doesNotMatch(activity, /<img/);
 assert.doesNotMatch(activity, /Deleted/);
 assert.match(activity, /data-expense-edit="e1"/);
+
+const iconActivity = renderActivity([
+  { id: "food", description: "Lunch", category: "Food", amount_minor: 1200, expense_date: "2026-09-25", payer_id: "u1", created_by: "u1" },
+  { id: "taxi", description: "Taxi", category: "Transport", amount_minor: 800, expense_date: "2026-09-25", payer_id: "u1", created_by: "u1" }
+], { currentUserId: "u1", ownerId: "u9", currency: "EUR" });
+assert.match(iconActivity, /activity-category-icon[^>]*>🍽️</);
+assert.match(iconActivity, /activity-category-icon[^>]*>🚕</);
 
 const settlementMembers = [
   { user_id: "a", status: "active", profiles: { display_name: "A" } },

@@ -371,6 +371,10 @@ export function createGroupsController({ repository, auth, root, navigatorState 
     const form = event.target.closest?.("[data-expense-form]");
     if (!form) return;
     captureExpenseForm(form);
+    if (event.target.matches?.('[name="expenseDate"]')) {
+      const label = form.querySelector?.("[data-expense-date-value]");
+      if (label && event.target.value) label.textContent = new Date(`${event.target.value}T12:00:00`).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
+    }
     if (!expenseStatus) return;
     expenseStatus = "";
     form.querySelector?.(".expense-form-status")?.remove();
