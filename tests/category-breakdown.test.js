@@ -35,7 +35,22 @@ const sandbox = {
 };
 
 vm.createContext(sandbox);
-vm.runInContext(`${source}\nthis.__test = { breakdownMarkup, categoryTotals, categoryWheelGradient, renameCategory, applyCategoryChanges, expensesForPeriod, periodLabel };`, sandbox);
+vm.runInContext(`${source}\nthis.__test = { breakdownMarkup, categoryTotals, categoryWheelGradient, renameCategory, applyCategoryChanges, expensesForPeriod, periodLabel, emitPersonalMutation };`, sandbox);
+
+assert.equal(typeof sandbox.whereItGoesPersonalData.snapshot, "function");
+assert.equal(typeof sandbox.whereItGoesPersonalData.replaceSnapshot, "function");
+const mutations = [];
+const unsubscribe = sandbox.whereItGoesPersonalData.onMutation((mutation) => mutations.push(mutation));
+sandbox.__test.emitPersonalMutation({ kind: "expense_delete", expenseId: "e1" });
+assert.deepEqual(mutations, [{ kind: "expense_delete", expenseId: "e1" }]);
+unsubscribe();
+
+const userASnapshot = { expenses: [{ id: "user-a-secret", amount: 1, category: "Food", labels: [], reimbursementPercent: 0, date: "2026-09-26", note: "", createdAt: 1 }], categories: [{ name: "Food", emoji: "🥑", color: "#eee" }], style: "neon" };
+const userBSnapshot = { expenses: [{ id: "user-b-secret", amount: 2, category: "Other", labels: [], reimbursementPercent: 0, date: "2026-09-26", note: "", createdAt: 2 }], categories: [{ name: "Other", emoji: "✨", color: "#ddd" }], style: "swiss" };
+sandbox.whereItGoesPersonalData.useNamespace("user-a", userASnapshot);
+assert.equal(sandbox.whereItGoesPersonalData.snapshot().expenses[0].id, "user-a-secret");
+sandbox.whereItGoesPersonalData.useNamespace("user-b", userBSnapshot);
+assert.doesNotMatch(JSON.stringify(sandbox.whereItGoesPersonalData.snapshot()), /user-a-secret/);
 
 const monthly = [
   { id: "coffee", amount: 4.5, category: "Food", labels: ["Treat"], reimbursementPercent: 0, date: "2026-08-17", note: "Coffee", createdAt: 2 },

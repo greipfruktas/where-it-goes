@@ -30,6 +30,8 @@ let selectedLabels = [];
 let selectedReimbursementPercent = 0;
 let expandedBreakdownCategories = new Set();
 let selectedStyle = loadStyle();
+let activePersonalNamespace = "guest";
+const personalMutationListeners = new Set();
 
 const $ = (selector) => document.querySelector(selector);
 const money = new Intl.NumberFormat("en-IE", { style: "currency", currency: "EUR" });
@@ -81,12 +83,69 @@ function loadStyle() {
 }
 
 function persist() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(expenses));
+  if (activePersonalNamespace === "guest") localStorage.setItem(STORAGE_KEY, JSON.stringify(expenses));
+  else persistAccountSnapshot();
 }
 
 function persistCategories() {
-  localStorage.setItem(GROUPS_KEY, JSON.stringify(categories));
+  if (activePersonalNamespace === "guest") localStorage.setItem(GROUPS_KEY, JSON.stringify(categories));
+  else persistAccountSnapshot();
 }
+
+function clonePersonalValue(value) {
+  return JSON.parse(JSON.stringify(value));
+}
+
+function accountCacheKey(namespace) {
+  return `where-it-goes-personal-cache-v2:${encodeURIComponent(namespace)}`;
+}
+
+function persistAccountSnapshot() {
+  const key = accountCacheKey(activePersonalNamespace);
+  let deletedRows = [];
+  try {
+    const cached = JSON.parse(localStorage.getItem(key));
+    deletedRows = Array.isArray(cached?.rows) ? cached.rows.filter((row) => row.deletedAt || row.deleted_at) : [];
+  } catch {}
+  localStorage.setItem(key, JSON.stringify({ rows: [...deletedRows, ...expenses], categories, style: selectedStyle }));
+}
+
+function emitPersonalMutation(mutation) {
+  personalMutationListeners.forEach((listener) => listener(mutation));
+}
+
+function personalSnapshot() {
+  return clonePersonalValue({ expenses, categories, style: selectedStyle });
+}
+
+function replacePersonalSnapshot(snapshot = {}) {
+  expenses = clonePersonalValue(snapshot.expenses || snapshot.rows || []).filter((row) => !(row.deletedAt || row.deleted_at));
+  categories = clonePersonalValue(snapshot.categories || defaultCategories);
+  selectedStyle = styleOptions[snapshot.style] ? snapshot.style : "pocket";
+  selectedCategory = categories.some((category) => category.name === selectedCategory) ? selectedCategory : categories[0]?.name || "Other";
+  selectedLabels = [];
+  expandedBreakdownCategories = new Set();
+  persistCategories();
+  persist();
+  if (activePersonalNamespace === "guest") localStorage.setItem(STYLE_KEY, selectedStyle);
+  initChoices();
+  applyAppStyle(selectedStyle, false);
+  render();
+}
+
+globalThis.whereItGoesPersonalData = {
+  snapshot: personalSnapshot,
+  replaceSnapshot: replacePersonalSnapshot,
+  useNamespace(namespace, snapshot) {
+    activePersonalNamespace = namespace || "guest";
+    replacePersonalSnapshot(snapshot);
+  },
+  onMutation(listener) {
+    personalMutationListeners.add(listener);
+    return () => personalMutationListeners.delete(listener);
+  },
+  showStorageError(message) { showToast(message); }
+};
 
 function formatDate(dateString, options = { day: "numeric", month: "short" }) {
   return new Intl.DateTimeFormat("en-IE", options).format(new Date(`${dateString}T12:00:00`));
@@ -121,7 +180,10 @@ function currentPeriod() {
 }
 
 function categoryFor(name) {
-  return categories.find((category) => category.name === name) || categories.at(-1);
+  return categories.find((category) => category.name === name)
+    || defaultCategories.find((category) => category.name === name)
+    || categories.at(-1)
+    || defaultCategories.at(-1);
 }
 
 function applyAppStyle(style, save = true) {
@@ -134,7 +196,10 @@ function applyAppStyle(style, save = true) {
     button.classList.toggle("selected", active);
     button.setAttribute("aria-pressed", String(active));
   });
-  if (save) localStorage.setItem(STYLE_KEY, selectedStyle);
+  if (save) {
+    if (activePersonalNamespace === "guest") localStorage.setItem(STYLE_KEY, selectedStyle);
+    else persistAccountSnapshot();
+  }
 }
 
 function renameCategory(state, oldName, nextCategory) {
@@ -375,6 +440,7 @@ function saveGroups() {
 
   persistCategories();
   persist();
+  emitPersonalMutation({ kind: "settings_replace", settings: { categories: clonePersonalValue(categories), style: selectedStyle } });
   initChoices();
   updateChoices();
   render();
@@ -519,12 +585,12 @@ $("#expenseForm").addEventListener("submit", (event) => {
   };
   expenses = id ? expenses.map((item) => item.id === id ? entry : item) : [...expenses, entry];
   selectedMonth = entry.date.slice(0, 7);
-  persist(); closeSheet(); render(); switchView("overview"); showToast(id ? "Expense updated" : "Expense saved");
+  persist(); emitPersonalMutation({ kind: "expense_upsert", expense: clonePersonalValue(entry) }); closeSheet(); render(); switchView("overview"); showToast(id ? "Expense updated" : "Expense saved");
 });
 $("#deleteButton").addEventListener("click", () => {
   const id = $("#expenseId").value;
   expenses = expenses.filter((item) => item.id !== id);
-  persist(); closeSheet(); render(); showToast("Expense deleted");
+  persist(); emitPersonalMutation({ kind: "expense_delete", expenseId: id }); closeSheet(); render(); showToast("Expense deleted");
 });
 document.addEventListener("click", (event) => {
   const expenseButton = event.target.closest("[data-expense-id]");
@@ -589,6 +655,7 @@ $("#styleMenu").addEventListener("click", (event) => {
   const button = event.target.closest("[data-style-option]");
   if (!button) return;
   applyAppStyle(button.dataset.styleOption);
+  emitPersonalMutation({ kind: "settings_replace", settings: { categories: clonePersonalValue(categories), style: selectedStyle } });
   toggleStyleMenu(false);
   showToast(`Style ${styleOptions[selectedStyle].label} applied`);
 });

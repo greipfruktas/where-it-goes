@@ -17,6 +17,10 @@ assert.match(css, /body\[data-style="neon"\]/, "Option B should have a Neon Nigh
 assert.match(css, /body\[data-style="swiss"\]/, "Option C should have a Minimal Swiss theme hook");
 assert.match(js, /STYLE_KEY/, "selected style should be saved separately from expenses");
 assert.match(js, /function applyAppStyle/, "style selection should be applied through a named helper");
+assert.match(js, /whereItGoesPersonalData/, "Personal should expose a narrow synchronization bridge");
+assert.match(js, /emitPersonalMutation\(\{ kind: "expense_upsert"/, "expense saves should notify the sync bridge");
+assert.match(js, /emitPersonalMutation\(\{ kind: "expense_delete"/, "expense deletes should notify the sync bridge");
+assert.match(js, /emitPersonalMutation\(\{ kind: "settings_replace"/, "category and style changes should notify the sync bridge");
 assert.match(html, /id="rangeStartInput"/, "overview should include a from-date input");
 assert.match(html, /id="rangeEndInput"/, "overview should include a to-date input");
 assert.match(html, /data-period-mode="range"/, "overview should include a custom dates mode");
