@@ -120,6 +120,19 @@ function eventTargetStub() {
 
 {
   const root = rootStub();
+  const controller = createGroupsController({
+    root,
+    navigatorState: { onLine: true },
+    auth: { getSession: async () => ({ user: { id: "u1" } }) },
+    repository: { listGroups: async () => { throw new Error("permission denied"); } }
+  });
+  await controller.showGroups();
+  assert.match(root.innerHTML, /Groups could not load/);
+  assert.doesNotMatch(root.innerHTML, /invite did not work/i);
+}
+
+{
+  const root = rootStub();
   const network = eventTargetStub();
   const navigatorState = { onLine: true };
   let writes = 0;

@@ -283,7 +283,12 @@ export function createGroupsController({ repository, auth, root, navigatorState 
   async function showGroups() {
     setMode("groups");
     if (!navigatorState?.onLine) return render({ state: "offline" });
-    return loadGroups();
+    try {
+      return await loadGroups();
+    } catch (error) {
+      render({ state: "groups-error", message: error.message });
+      return null;
+    }
   }
 
   function showPersonal() {

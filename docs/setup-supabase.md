@@ -5,7 +5,7 @@ The Personal tracker remains local and does not depend on this setup. Shared Gro
 ## 1. Create and configure Supabase
 
 1. Create a Supabase project and note its project URL.
-2. Open SQL Editor and run the files in `supabase/migrations/` in numeric order. For a new project, run `001_shared_groups.sql`, `002_archive_guards.sql`, then `003_personal_sync.sql`. For an existing project, run only the migrations not yet applied.
+2. Open SQL Editor and run the files in `supabase/migrations/` in numeric order. For a new project, run `001_shared_groups.sql`, `002_archive_guards.sql`, `003_personal_sync.sql`, then `004_group_table_grants.sql`. For an existing project, run only the migrations not yet applied.
 3. In Database → Publications → `supabase_realtime`, enable the seven Groups tables (`profiles`, `groups`, `group_members`, `group_invites`, `group_expenses`, `expense_participants`, and `group_repayments`) plus `personal_expenses` and `personal_settings`.
 4. In Authentication → URL Configuration, set the Site URL to the live GitHub Pages app.
 5. Add both the live GitHub Pages URL and `http://localhost:4173/` to Redirect URLs.

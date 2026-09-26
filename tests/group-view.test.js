@@ -58,6 +58,11 @@ assert.match(offlineDetail, /Offline · read-only/i);
 assert.doesNotMatch(offlineDetail, /data-expense-open/);
 assert.doesNotMatch(offlineDetail, /data-member-remove/);
 
+const loadingError = renderGroupShell({ state: "groups-error", message: "permission denied" });
+assert.match(loadingError, /Groups could not load/);
+assert.match(loadingError, /permission denied/);
+assert.doesNotMatch(loadingError, /invite did not work/i);
+
 assert.equal(renderOwnerSettings({ owner_id: "owner", group_members: members }, "u2"), "");
 const ownerControls = renderOwnerSettings({ id: "g", owner_id: "u1", status: "active", group_members: members, group_invites: [] }, "u1");
 assert.match(ownerControls, /data-invite-rotate/);
