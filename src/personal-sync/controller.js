@@ -41,7 +41,11 @@ export function createPersonalSyncController({ repository, storage, personalData
       const cached = storage.accountSnapshot(user.id);
       const rows = mergeExpenseRows(cached.rows, cloud.expenses);
       const chosen = chooseInitialSettings({
-        local: { categories: cached.categories || guest?.categories, style: cached.style || guest?.style || "pocket", importRules: cached.categories ? cached.importRules : (guest?.importRules || []) },
+        local: {
+          categories: cached.categories?.length ? cached.categories : (guest?.categories || []),
+          style: cached.categories?.length ? (cached.style || "pocket") : (guest?.style || cached.style || "pocket"),
+          importRules: cached.categories?.length ? cached.importRules : (guest?.importRules || [])
+        },
         cloud: cloud.settings ? { categories: cloud.settings.categories, style: cloud.settings.style, importRules: cloud.settings.importRules } : null,
         localIsDefault: guest?.localIsDefault
       });

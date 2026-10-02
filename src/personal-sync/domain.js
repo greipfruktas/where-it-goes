@@ -117,6 +117,6 @@ export function mergeExpenseRows(localRows = [], cloudRows = []) {
 
 export function chooseInitialSettings({ local, cloud }) {
   const normalize = (settings) => settings ? { ...clone(settings), importRules: normalizeImportRules(settings.importRules) } : null;
-  if (cloud) return { settings: normalize(cloud), upload: false };
+  if (cloud?.categories?.length) return { settings: normalize(cloud), upload: false };
   return { settings: normalize(local), upload: true };
 }

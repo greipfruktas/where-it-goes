@@ -52,6 +52,15 @@ assert.equal(sandbox.whereItGoesPersonalData.snapshot().expenses[0].id, "user-a-
 sandbox.whereItGoesPersonalData.useNamespace("user-b", userBSnapshot);
 assert.doesNotMatch(JSON.stringify(sandbox.whereItGoesPersonalData.snapshot()), /user-a-secret/);
 
+sandbox.whereItGoesPersonalData.useNamespace("user-empty-categories", {
+  expenses: [{ id: "old-trip", amount: 8, category: "Travel", labels: [], reimbursementPercent: 0, date: "2026-08-10", note: "Train", createdAt: 3 }],
+  categories: [],
+  style: "pocket"
+});
+const recoveredCategoryNames = sandbox.whereItGoesPersonalData.snapshot().categories.map(({ name }) => name);
+assert.ok(recoveredCategoryNames.includes("Food"), "an empty stored category list should restore the standard choices");
+assert.ok(recoveredCategoryNames.includes("Travel"), "categories used by older expenses should remain selectable");
+
 const monthly = [
   { id: "coffee", amount: 4.5, category: "Food", labels: ["Treat"], reimbursementPercent: 0, date: "2026-08-17", note: "Coffee", createdAt: 2 },
   { id: "bus", amount: 10, category: "Transport", labels: [], reimbursementPercent: 50, date: "2026-08-16", note: "Bus", createdAt: 1 },

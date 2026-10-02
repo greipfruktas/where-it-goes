@@ -75,6 +75,11 @@ assert.deepEqual(
   chooseInitialSettings({ local: defaultSettings, cloud: null, localIsDefault: true }),
   { settings: defaultSettings, upload: true }
 );
+assert.deepEqual(
+  chooseInitialSettings({ local: defaultSettings, cloud: { categories: [], style: "neon", importRules: [] }, localIsDefault: false }),
+  { settings: defaultSettings, upload: true },
+  "an empty cloud category list must not erase usable local categories"
+);
 
 assert.deepEqual(expenseToOperation(normalized.expenses[0], "phone-a:3"), {
   operation_id: "phone-a:3",

@@ -33,3 +33,28 @@ listeners.forEach((listener) => listener({ kind: "settings_replace", settings: {
 assert.deepEqual(storage.outbox("user-a").at(-1).import_rules, visible.importRules);
 controller.stopSession();
 assert.equal(controller.status().signedIn, false);
+
+const repairValues = new Map([
+  ["where-it-goes-groups-v1", JSON.stringify([{ name: "Travel", emoji: "🧳", color: "#eee" }])],
+  ["where-it-goes-personal-imported-v1:user-repair", "1"],
+  ["where-it-goes-personal-cache-v2:user-repair", JSON.stringify({ rows: [], categories: [], style: "pocket", importRules: [] })]
+]);
+const repairLocal = { getItem: (key) => repairValues.get(key) ?? null, setItem: (key, value) => repairValues.set(key, String(value)) };
+const repairStorage = createPersonalStorage(repairLocal, { deviceIdFactory: () => "repair-phone" });
+let repairedVisible;
+const repairPersonalData = {
+  snapshot: () => repairedVisible,
+  useNamespace: (_namespace, snapshot) => { repairedVisible = snapshot; },
+  onMutation: () => () => {},
+  showStorageError: () => {}
+};
+const repairApplied = [];
+const repairRepository = {
+  pull: async () => ({ expenses: [], settings: { categories: [], style: "pocket", importRules: [] } }),
+  apply: async (operation) => { repairApplied.push(operation); },
+  subscribe: () => ({ unsubscribe() {} })
+};
+const repairController = createPersonalSyncController({ repository: repairRepository, storage: repairStorage, personalData: repairPersonalData, networkState: {}, documentState: {} });
+await repairController.startSession({ id: "user-repair" });
+assert.deepEqual(repairedVisible.categories, [{ name: "Travel", emoji: "🧳", color: "#eee" }]);
+assert.ok(repairStorage.outbox("user-repair").some(({ kind, categories }) => kind === "settings_replace" && categories?.[0]?.name === "Travel"));

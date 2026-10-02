@@ -112,6 +112,19 @@ function clonePersonalValue(value) {
   return JSON.parse(JSON.stringify(value));
 }
 
+function recoverPersonalCategories(value, expenseItems = []) {
+  if (Array.isArray(value) && value.length) return clonePersonalValue(value);
+  const recovered = clonePersonalValue(defaultCategories);
+  const known = new Set(recovered.map(({ name }) => name));
+  for (const expense of Array.isArray(expenseItems) ? expenseItems : []) {
+    const name = typeof expense?.category === "string" ? expense.category.trim() : "";
+    if (!name || known.has(name)) continue;
+    recovered.push({ name, emoji: "✨", color: "#e8e9e5" });
+    known.add(name);
+  }
+  return recovered;
+}
+
 function accountCacheKey(namespace) {
   return `where-it-goes-personal-cache-v2:${encodeURIComponent(namespace)}`;
 }
@@ -136,7 +149,7 @@ function personalSnapshot() {
 
 function replacePersonalSnapshot(snapshot = {}) {
   expenses = clonePersonalValue(snapshot.expenses || snapshot.rows || []).filter((row) => !(row.deletedAt || row.deleted_at));
-  categories = clonePersonalValue(snapshot.categories || defaultCategories);
+  categories = recoverPersonalCategories(snapshot.categories, expenses);
   selectedStyle = styleOptions[snapshot.style] ? snapshot.style : "pocket";
   importRules = normalizeImportRules(clonePersonalValue(snapshot.importRules || []), categories);
   selectedCategory = categories.some((category) => category.name === selectedCategory) ? selectedCategory : categories[0]?.name || "Other";
