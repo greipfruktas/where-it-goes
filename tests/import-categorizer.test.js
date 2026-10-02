@@ -28,6 +28,8 @@ assert.deepEqual(categorizeTransaction({ merchant: "Maxima LT", description: "Gr
   category: "Home", merchantKey: "MAXIMA LT", source: "learned"
 });
 assert.equal(categorizeTransaction({ merchant: "Unknown", description: "Anything" }, categories, []).category, "Other");
+assert.equal(categorizeTransaction({ merchant: "BUSINESS CENTER", description: "Office" }, categories, []).category, "Other");
+assert.equal(categorizeTransaction({ merchant: "BIKINI SHOP", description: "Swimwear" }, categories, []).category, "Other");
 assert.equal(categorizeTransaction({ merchant: "Zara", description: "Clothes" }, categories.filter(({ name }) => name !== "Shopping"), []).category, "Other");
 assert.equal(categorizeTransaction({ merchant: "Maxima", description: "Food" }, categories, [{ merchantKey: "MAXIMA", category: "Removed", updatedAt: 1 }]).category, "Other");
 

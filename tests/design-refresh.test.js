@@ -70,3 +70,5 @@ assert.match(css, /body\[data-style="neon"\] \.money-wheel-card \{[^}]*backgroun
 assert.match(css, /body\[data-style="swiss"\] \.money-wheel-card \{[^}]*background:\s*transparent/s, "swiss style should not repaint the money wheel card behind the transparent center");
 assert.match(js, /rangeStartInput"\)\.addEventListener\("input", updateRangeStart\)/, "from-date changes should update immediately on mobile input events");
 assert.match(js, /rangeEndInput"\)\.addEventListener\("input", updateRangeEnd\)/, "to-date changes should update immediately on mobile input events");
+assert.match(css, /@media \(max-width:\s*430px\)[\s\S]*?\.topbar\s*\{[^}]*grid-template-columns:\s*1fr/s, "narrow headers should stack actions without horizontal overflow");
+assert.match(css, /@media \(max-width:\s*430px\)[\s\S]*?\.topbar-actions\s*\{[^}]*flex-wrap:\s*wrap/s, "narrow header actions should wrap");

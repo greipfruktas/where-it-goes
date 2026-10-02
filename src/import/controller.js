@@ -19,6 +19,8 @@ export function createImportController({
   documentState = globalThis.document
 }) {
   let state = null;
+  let generation = 0;
+  let previousFocus = null;
 
   function render() {
     const snapshot = personalData.snapshot();
@@ -27,33 +29,46 @@ export function createImportController({
   }
 
   function open() {
+    generation += 1;
     state = null;
+    previousFocus = documentState?.activeElement || null;
     root.hidden = false;
     if (documentState?.body) documentState.body.style.overflow = "hidden";
     render();
+    root.querySelector?.("[data-import-file]")?.focus?.();
   }
 
   function close() {
+    generation += 1;
     state = null;
     root.hidden = true;
     root.innerHTML = "";
     if (documentState?.body) documentState.body.style.overflow = "";
+    previousFocus?.focus?.();
+    previousFocus = null;
   }
 
   async function chooseFile(file) {
     const name = String(file?.name || "");
-    if (!/\.(xlsx|xls)$/i.test(name)) throw new Error("Choose an XLSX or XLS file");
-    if (Number(file?.size) > MAX_FILE_SIZE) throw new Error("The statement must be 10 MB or smaller");
+    const request = ++generation;
+    state = { filename: name, loading: true };
+    root.hidden = false;
+    render();
     try {
+      if (!/\.(xlsx|xls)$/i.test(name)) throw new Error("Choose an XLSX or XLS file");
+      if (Number(file?.size) > MAX_FILE_SIZE) throw new Error("The statement must be 10 MB or smaller");
       const buffer = await fileReader(file);
+      if (request !== generation) return null;
       const parsed = parseWorkbook(buffer, XLSX);
       const snapshot = personalData.snapshot();
       state = await createState({ ...parsed, categories: snapshot.categories || [], learnedRules: snapshot.importRules || [], existingExpenses: snapshot.expenses || [], digest });
+      if (request !== generation) return null;
       state = { ...state, filename: name };
       root.hidden = false;
       render();
       return state;
     } catch (error) {
+      if (request !== generation) return null;
       state = { filename: name, error: error.message };
       root.hidden = false;
       render();
@@ -93,7 +108,7 @@ export function createImportController({
       close();
       return count;
     } catch (error) {
-      state = { ...state, rows: state.rows.map((row) => row.selected && row.inRange ? { ...row, error: error.message } : row) };
+      state = { ...state, rows: state.rows.map((row) => row.id === error.rowId ? { ...row, error: error.message } : row) };
       render();
       throw error;
     }
@@ -129,6 +144,9 @@ export function createImportController({
     if (event.target.closest?.("[data-import-save]")) {
       try { save(); } catch (error) { notify(error.message); }
     }
+  });
+  root.addEventListener?.("keydown", (event) => {
+    if (event.key === "Escape") close();
   });
 
   return { open, close, chooseFile, setRange, updateRow, selectAllNew, excludeAll, save, getState: () => state };

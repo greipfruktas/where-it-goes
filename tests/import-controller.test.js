@@ -19,7 +19,8 @@ const controller = createImportController({
   root, fileReader, XLSX: {}, personalData, notify: (message) => notices.push(message),
   parseWorkbook: () => parsed, createState: async () => structuredClone(review),
   buildBatch: (state) => {
-    if (state.rows.some(({ amount }) => amount <= 0)) throw new Error("Expense amount is invalid");
+    const invalid = state.rows.find(({ amount }) => amount <= 0);
+    if (invalid) { const error = new Error("Expense amount is invalid"); error.rowId = invalid.id; throw error; }
     return { expenses: state.rows.filter(({ selected }) => selected), learnedRules: state.pendingRules };
   }
 });
@@ -28,6 +29,19 @@ controller.open();
 await assert.rejects(controller.chooseFile({ name: "statement.pdf", size: 20 }), /xlsx or xls/i);
 await assert.rejects(controller.chooseFile({ name: "statement.xlsx", size: 10 * 1024 * 1024 + 1 }), /10 MB/i);
 assert.equal(reads, 0, "invalid files must reject before reading");
+
+let resolveSlow;
+const race = createImportController({
+  root, fileReader: () => new Promise((resolve) => { resolveSlow = resolve; }), XLSX: {}, personalData, notify: () => {},
+  parseWorkbook: () => parsed, createState: async () => structuredClone(review), buildBatch: () => ({ expenses: [], learnedRules: [] })
+});
+const pending = race.chooseFile({ name: "slow.xlsx", size: 100 });
+assert.equal(race.getState().loading, true);
+race.close();
+resolveSlow(new ArrayBuffer(1));
+await pending;
+assert.equal(race.getState(), null, "a completed stale read must not reopen a closed importer");
+assert.equal(root.hidden, true);
 
 await controller.chooseFile({ name: "statement.xlsx", size: 100 });
 assert.equal(controller.getState().filename, "statement.xlsx");
@@ -39,6 +53,7 @@ controller.updateRow("swedbank:1", { amount: 0 });
 assert.throws(() => controller.save(), /amount/i);
 assert.equal(commits, 0);
 assert.match(controller.getState().rows[0].error, /amount/i);
+assert.equal(controller.getState().rows.filter(({ error }) => error).length, 1);
 controller.updateRow("swedbank:1", { amount: 5 });
 assert.equal(controller.save(), 1);
 assert.equal(commits, 1);

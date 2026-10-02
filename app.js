@@ -495,6 +495,7 @@ function saveGroups() {
 
   persistCategories();
   persist();
+  if (activePersonalNamespace === "guest") localStorage.setItem(IMPORT_RULES_KEY, JSON.stringify(importRules));
   emitPersonalMutation({ kind: "settings_replace", settings: { categories: clonePersonalValue(categories), style: selectedStyle, importRules: clonePersonalValue(importRules) } });
   initChoices();
   updateChoices();

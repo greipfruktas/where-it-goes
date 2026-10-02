@@ -15,7 +15,7 @@ const sandbox = {
   window: { addEventListener() {}, scrollTo() {} }, navigator: {}, setTimeout: () => 1, clearTimeout() {}
 };
 vm.createContext(sandbox);
-vm.runInContext(source, sandbox);
+vm.runInContext(`${source}\nthis.__saveGroups = saveGroups;`, sandbox);
 
 const bridge = sandbox.whereItGoesPersonalData;
 const plain = (value) => JSON.parse(JSON.stringify(value));
@@ -45,3 +45,8 @@ assert.equal(mutations.length, mutationCount);
 bridge.useNamespace("user-a", { expenses: [], categories: bridge.snapshot().categories, style: "pocket", importRules: [{ merchantKey: "BUS", category: "Transport", updatedAt: 20 }] });
 assert.deepEqual(plain(bridge.snapshot().importRules), [{ merchantKey: "BUS", category: "Transport", updatedAt: 20 }]);
 assert.match(values.get("where-it-goes-personal-cache-v2:user-a"), /BUS/);
+
+bridge.useNamespace("guest", { expenses: [], categories: [{ name: "Food", emoji: "🥑", color: "#eee" }], style: "pocket", importRules: [{ merchantKey: "CAFE", category: "Food", updatedAt: 30 }] });
+sandbox.document.querySelector = (selector) => selector.includes("group-name") ? { value: "Groceries" } : selector.includes("group-emoji") ? { value: "🛒" } : element();
+sandbox.__saveGroups();
+assert.deepEqual(JSON.parse(values.get("where-it-goes-import-rules-v1")), [{ merchantKey: "CAFE", category: "Groceries", updatedAt: 30 }]);

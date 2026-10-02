@@ -484,6 +484,8 @@ body[data-style="swiss"] .add-button { border-color: var(--paper); border-radius
 body[data-style="swiss"] .progress span { background: #11110f; }
 @media (min-width: 700px) { .sheet { bottom: 24px; border-radius: 29px; } }
 @media (max-width: 430px) {
+  .topbar { display: grid; grid-template-columns: 1fr; align-items: start; }
+  .topbar-actions { flex-wrap: wrap; justify-content: flex-start; }
   .groups-root { padding-inline: 14px; }
   .group-create-form, .group-expense-form, .group-repayment-form { padding: 17px; }
   .group-date-row { grid-template-columns: 1fr; }

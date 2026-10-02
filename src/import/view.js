@@ -25,7 +25,7 @@ function rowMarkup(row, categories) {
       <label><span>Amount</span><input type="number" inputmode="decimal" min="0.01" step="0.01" data-row-amount="${escapeHTML(row.id)}" value="${escapeHTML(row.amount)}" /></label>
       <label class="import-wide"><span>Description</span><input type="text" maxlength="60" data-row-note="${escapeHTML(row.id)}" value="${escapeHTML(row.note)}" /></label>
       <label><span>Category</span><select data-row-category="${escapeHTML(row.id)}">${categories.map(({ name, emoji }) => `<option value="${escapeHTML(name)}" ${name === row.category ? "selected" : ""}>${escapeHTML(emoji)} ${escapeHTML(name)}</option>`).join("")}</select></label>
-      <label><span>Coming back</span><select data-row-reimbursement="${escapeHTML(row.id)}">${[0, 50, 100].map((value) => `<option value="${value}" ${Number(row.reimbursementPercent) === value ? "selected" : ""}>${value ? `${value}%` : "None"}</option>`).join("")}</select></label>
+      <label><span>Coming back %</span><input type="number" inputmode="numeric" min="0" max="100" step="1" data-row-reimbursement="${escapeHTML(row.id)}" value="${escapeHTML(row.reimbursementPercent)}" /></label>
       <fieldset class="import-wide"><legend>Labels</legend><div class="import-labels">${LABELS.map((label) => `<label><input type="checkbox" data-row-label="${escapeHTML(row.id)}" value="${label}" ${(row.labels || []).includes(label) ? "checked" : ""} /><span>${label}</span></label>`).join("")}</div></fieldset>
     </div>
     ${row.error ? `<p class="import-row-error" role="alert">${escapeHTML(row.error)}</p>` : ""}

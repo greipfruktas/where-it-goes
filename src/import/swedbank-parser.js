@@ -22,7 +22,7 @@ function localDate(year, month, day) {
 
 function parseDate(value, XLSX) {
   if (value instanceof Date && Number.isFinite(value.getTime())) {
-    return localDate(value.getFullYear(), value.getMonth() + 1, value.getDate());
+    return localDate(value.getUTCFullYear(), value.getUTCMonth() + 1, value.getUTCDate());
   }
   if (typeof value === "number" && Number.isFinite(value)) {
     const parsed = XLSX.SSF.parse_date_code(value);

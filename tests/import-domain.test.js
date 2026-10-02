@@ -52,4 +52,15 @@ assert.ok(batch.expenses.every(({ amount }) => amount > 0));
 assert.ok(batch.expenses.every(({ createdAt }) => createdAt === 123456));
 
 const invalid = updateReviewRow(selected, selected.rows[0].id, { amount: 0 });
-assert.throws(() => buildImportBatch(invalid, 123456), /amount/i);
+assert.throws(() => buildImportBatch(invalid, 123456), (error) => /amount/i.test(error.message) && error.rowId === selected.rows[0].id);
+
+const movedOutside = updateReviewRow(initial, initial.rows[0].id, { date: "2026-10-01" });
+assert.equal(movedOutside.rows[0].inRange, false);
+const movedInside = updateReviewRow(filterReviewRows(initial, "2026-09-03", "2026-09-04"), initial.rows[0].id, { date: "2026-09-03" });
+assert.equal(movedInside.rows[0].inRange, true);
+
+const longMerchant = await createReviewState({
+  transactions: [{ date: "2026-09-05", signedAmount: -1, merchant: "A".repeat(80), description: "", sourceRow: 1 }],
+  categories, learnedRules: [], existingExpenses: [], digest
+});
+assert.equal(longMerchant.rows[0].note.length, 60, "default notes must satisfy Personal's edit limit");

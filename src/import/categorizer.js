@@ -27,7 +27,8 @@ export function categorizeTransaction(transaction, categories, learnedRules = []
     return { category: available.has(learned.category) ? learned.category : "Other", merchantKey, source: available.has(learned.category) ? "learned" : "other" };
   }
   const haystack = normalizeMerchant(`${transaction?.merchant || ""} ${transaction?.description || ""}`);
-  const builtIn = BUILT_IN_RULES.find((rule) => available.has(rule.category) && rule.words.some((word) => haystack.includes(word)));
+  const padded = ` ${haystack} `;
+  const builtIn = BUILT_IN_RULES.find((rule) => available.has(rule.category) && rule.words.some((word) => padded.includes(` ${word} `)));
   return { category: builtIn?.category || "Other", merchantKey, source: builtIn ? "built-in" : "other" };
 }
 

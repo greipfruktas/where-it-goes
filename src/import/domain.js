@@ -32,7 +32,7 @@ export async function createReviewState({ transactions = [], unreadableRows = 0,
       amount: Math.abs(Number(transaction.signedAmount)),
       merchant: transaction.merchant,
       description: transaction.description,
-      note: transaction.merchant || transaction.description,
+      note: String(transaction.merchant || transaction.description || "").slice(0, 60),
       category: category.category,
       merchantKey: category.merchantKey,
       labels: [],
@@ -62,7 +62,13 @@ export function filterReviewRows(state, from, to) {
 }
 
 export function updateReviewRow(state, id, patch) {
-  return { ...state, rows: state.rows.map((row) => row.id === id ? { ...row, ...patch } : { ...row }) };
+  const bounds = normalizeBounds(state.from, state.to);
+  return { ...state, rows: state.rows.map((row) => {
+    if (row.id !== id) return { ...row };
+    const next = { ...row, ...patch };
+    if (Object.hasOwn(patch, "date")) next.inRange = next.date >= bounds.from && next.date <= bounds.to;
+    return next;
+  }) };
 }
 
 export function reviewSummary(state) {
@@ -89,7 +95,10 @@ function validateRow(row, categories) {
 export function buildImportBatch(state, now = Date.now()) {
   const categories = new Set(state.categories.map(({ name }) => name));
   const selected = state.rows.filter(({ selected, inRange }) => selected && inRange);
-  selected.forEach((row) => validateRow(row, categories));
+  selected.forEach((row) => {
+    try { validateRow(row, categories); }
+    catch (error) { error.rowId = row.id; throw error; }
+  });
   return {
     expenses: selected.map((row) => ({
       id: row.id,
