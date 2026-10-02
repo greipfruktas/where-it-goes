@@ -5,7 +5,7 @@ const html = fs.readFileSync(new URL("../index.html", import.meta.url), "utf8");
 const css = fs.readFileSync(new URL("../styles.css", import.meta.url), "utf8");
 const js = fs.readFileSync(new URL("../app.js", import.meta.url), "utf8");
 
-assert.match(html, /href="styles\.css\?v=26"/, "theme release should bypass stale installed-app CSS caches");
+assert.match(html, /href="styles\.css\?v=27"/, "theme release should bypass stale installed-app CSS caches");
 
 assert.match(html, /class="total-card pocket-ledger-card[^"]*"/, "monthly total card should opt into the Pocket Ledger treatment");
 assert.match(css, /--paper:\s*#f3ecdc/, "Pocket Ledger should use a warmer paper background");

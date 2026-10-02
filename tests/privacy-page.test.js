@@ -15,4 +15,6 @@ assert.match(privacy, /cached copy[^<]*after sign-out/i, "the policy should disc
 assert.match(privacy, /Shared group[^<]*Supabase/i, "the policy should explain shared-group cloud storage");
 assert.match(privacy, /Google[^<]*sign[ -]in/i, "the policy should explain Google account data use");
 assert.match(privacy, /delete/i, "the policy should explain deletion options");
+assert.match(privacy, /statement file[^<]*stays on[^<]*device/i, "the policy should disclose local statement parsing");
+assert.match(privacy, /saved expenses[^<]*category rules[^<]*sync/i, "the policy should distinguish the saved data that syncs");
 assert.match(serviceWorker, /\.\/privacy\.html/, "the privacy page should be available offline");
