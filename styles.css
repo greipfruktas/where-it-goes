@@ -15,7 +15,7 @@
   --pressed: translateY(1px) scale(.992);
   font-family: Inter, ui-rounded, "SF Pro Rounded", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   color: var(--ink);
-  background: var(--paper);
+  background: transparent;
   font-synthesis: none;
 }
 

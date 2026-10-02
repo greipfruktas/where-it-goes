@@ -39,4 +39,4 @@ assert.match(index, /src\/import\/controller\.js/);
 for (const asset of ["vendor/xlsx.full.min.js", "swedbank-parser.js", "categorizer.js", "duplicates.js", "domain.js", "view.js", "controller.js"]) {
   assert.match(serviceWorker, new RegExp(asset.replaceAll(".", "\\.")), `${asset} should be cached`);
 }
-assert.match(serviceWorker, /where-it-goes-v28/);
+assert.match(serviceWorker, /where-it-goes-v29/);
