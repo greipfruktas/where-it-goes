@@ -1,6 +1,7 @@
 const STORAGE_KEY = "where-it-goes-expenses-v1";
 const GROUPS_KEY = "where-it-goes-groups-v1";
 const STYLE_KEY = "where-it-goes-style-v1";
+const IMPORT_RULES_KEY = "where-it-goes-import-rules-v1";
 const styleOptions = {
   pocket: { label: "A", themeColor: "#f3ecdc" },
   neon: { label: "B", themeColor: "#151714" },
@@ -30,6 +31,7 @@ let selectedLabels = [];
 let selectedReimbursementPercent = 0;
 let expandedBreakdownCategories = new Set();
 let selectedStyle = loadStyle();
+let importRules = loadImportRules();
 let activePersonalNamespace = "guest";
 const personalMutationListeners = new Set();
 
@@ -82,6 +84,20 @@ function loadStyle() {
   }
 }
 
+function normalizeImportRules(value, availableCategories = categories) {
+  const names = new Set((availableCategories || []).map(({ name }) => name));
+  return (Array.isArray(value) ? value : []).filter((rule) =>
+    typeof rule?.merchantKey === "string" && rule.merchantKey.trim()
+    && typeof rule.category === "string" && names.has(rule.category)
+    && Number.isFinite(Number(rule.updatedAt))
+  ).map((rule) => ({ merchantKey: rule.merchantKey.trim(), category: rule.category, updatedAt: Number(rule.updatedAt) }));
+}
+
+function loadImportRules() {
+  try { return normalizeImportRules(JSON.parse(localStorage.getItem(IMPORT_RULES_KEY)) || []); }
+  catch { return []; }
+}
+
 function persist() {
   if (activePersonalNamespace === "guest") localStorage.setItem(STORAGE_KEY, JSON.stringify(expenses));
   else persistAccountSnapshot();
@@ -107,7 +123,7 @@ function persistAccountSnapshot() {
     const cached = JSON.parse(localStorage.getItem(key));
     deletedRows = Array.isArray(cached?.rows) ? cached.rows.filter((row) => row.deletedAt || row.deleted_at) : [];
   } catch {}
-  localStorage.setItem(key, JSON.stringify({ rows: [...deletedRows, ...expenses], categories, style: selectedStyle }));
+  localStorage.setItem(key, JSON.stringify({ rows: [...deletedRows, ...expenses], categories, style: selectedStyle, importRules }));
 }
 
 function emitPersonalMutation(mutation) {
@@ -115,19 +131,21 @@ function emitPersonalMutation(mutation) {
 }
 
 function personalSnapshot() {
-  return clonePersonalValue({ expenses, categories, style: selectedStyle });
+  return clonePersonalValue({ expenses, categories, style: selectedStyle, importRules });
 }
 
 function replacePersonalSnapshot(snapshot = {}) {
   expenses = clonePersonalValue(snapshot.expenses || snapshot.rows || []).filter((row) => !(row.deletedAt || row.deleted_at));
   categories = clonePersonalValue(snapshot.categories || defaultCategories);
   selectedStyle = styleOptions[snapshot.style] ? snapshot.style : "pocket";
+  importRules = normalizeImportRules(clonePersonalValue(snapshot.importRules || []), categories);
   selectedCategory = categories.some((category) => category.name === selectedCategory) ? selectedCategory : categories[0]?.name || "Other";
   selectedLabels = [];
   expandedBreakdownCategories = new Set();
   persistCategories();
   persist();
   if (activePersonalNamespace === "guest") localStorage.setItem(STYLE_KEY, selectedStyle);
+  if (activePersonalNamespace === "guest") localStorage.setItem(IMPORT_RULES_KEY, JSON.stringify(importRules));
   initChoices();
   applyAppStyle(selectedStyle, false);
   render();
@@ -144,8 +162,42 @@ globalThis.whereItGoesPersonalData = {
     personalMutationListeners.add(listener);
     return () => personalMutationListeners.delete(listener);
   },
+  commitImportBatch(batch) {
+    const nextExpenses = clonePersonalValue(batch?.expenses || []);
+    const pendingRules = clonePersonalValue(batch?.learnedRules || []);
+    nextExpenses.forEach(validateImportedExpense);
+    const nextById = new Map(expenses.map((expense) => [expense.id, clonePersonalValue(expense)]));
+    nextExpenses.forEach((expense) => nextById.set(expense.id, expense));
+    let nextRules = clonePersonalValue(importRules);
+    pendingRules.forEach((rule) => {
+      const normalized = normalizeImportRules([rule], categories);
+      if (!normalized.length) throw new Error("Import category rule is invalid");
+      nextRules = nextRules.filter((item) => item.merchantKey !== normalized[0].merchantKey);
+      nextRules.push(normalized[0]);
+    });
+    expenses = [...nextById.values()];
+    importRules = nextRules;
+    persist();
+    if (activePersonalNamespace === "guest") localStorage.setItem(IMPORT_RULES_KEY, JSON.stringify(importRules));
+    nextExpenses.forEach((expense) => emitPersonalMutation({ kind: "expense_upsert", expense: clonePersonalValue(expense) }));
+    emitPersonalMutation({ kind: "settings_replace", settings: { categories: clonePersonalValue(categories), style: selectedStyle, importRules: clonePersonalValue(importRules) } });
+    render();
+    return nextExpenses.length;
+  },
   showStorageError(message) { showToast(message); }
 };
+
+function validateImportedExpense(expense) {
+  if (!expense || typeof expense.id !== "string" || !expense.id.trim()) throw new Error("Expense ID is invalid");
+  if (!Number.isFinite(Number(expense.amount)) || Number(expense.amount) <= 0) throw new Error("Expense amount is invalid");
+  if (!categories.some(({ name }) => name === expense.category)) throw new Error("Expense category is invalid");
+  if (!Array.isArray(expense.labels) || expense.labels.some((label) => !labels.includes(label))) throw new Error("Expense labels are invalid");
+  const percent = Number(expense.reimbursementPercent);
+  if (!Number.isFinite(percent) || percent < 0 || percent > 100) throw new Error("Expense reimbursement is invalid");
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(expense.date))) throw new Error("Expense date is invalid");
+  if (typeof expense.note !== "string" || expense.note.length > 60) throw new Error("Expense description is invalid");
+  if (!Number.isFinite(Number(expense.createdAt))) throw new Error("Expense creation time is invalid");
+}
 
 function formatDate(dateString, options = { day: "numeric", month: "short" }) {
   return new Intl.DateTimeFormat("en-IE", options).format(new Date(`${dateString}T12:00:00`));
@@ -431,16 +483,19 @@ function saveGroups() {
   const lowerNames = nextCategories.map((category) => category.name.toLowerCase());
   if (new Set(lowerNames).size !== lowerNames.length) { showToast("Group names must be unique"); return; }
 
+  const oldCategories = categories;
   ({ categories, expenses, selectedCategory, expandedCategories: expandedBreakdownCategories } = applyCategoryChanges({
     categories,
     expenses,
     selectedCategory,
     expandedCategories: expandedBreakdownCategories
   }, nextCategories));
+  const renameMap = new Map(oldCategories.map((category, index) => [category.name, nextCategories[index]?.name || category.name]));
+  importRules = normalizeImportRules(importRules.map((rule) => ({ ...rule, category: renameMap.get(rule.category) || rule.category })), categories);
 
   persistCategories();
   persist();
-  emitPersonalMutation({ kind: "settings_replace", settings: { categories: clonePersonalValue(categories), style: selectedStyle } });
+  emitPersonalMutation({ kind: "settings_replace", settings: { categories: clonePersonalValue(categories), style: selectedStyle, importRules: clonePersonalValue(importRules) } });
   initChoices();
   updateChoices();
   render();
@@ -655,7 +710,7 @@ $("#styleMenu").addEventListener("click", (event) => {
   const button = event.target.closest("[data-style-option]");
   if (!button) return;
   applyAppStyle(button.dataset.styleOption);
-  emitPersonalMutation({ kind: "settings_replace", settings: { categories: clonePersonalValue(categories), style: selectedStyle } });
+  emitPersonalMutation({ kind: "settings_replace", settings: { categories: clonePersonalValue(categories), style: selectedStyle, importRules: clonePersonalValue(importRules) } });
   toggleStyleMenu(false);
   showToast(`Style ${styleOptions[selectedStyle].label} applied`);
 });
