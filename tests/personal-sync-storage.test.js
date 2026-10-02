@@ -14,7 +14,8 @@ function memoryStorage(initial = {}) {
 const storage = memoryStorage({
   "where-it-goes-expenses-v1": JSON.stringify([{ id: "guest", amount: 2 }]),
   "where-it-goes-groups-v1": JSON.stringify([{ name: "Food", emoji: "🥑", color: "#eee" }]),
-  "where-it-goes-style-v1": "neon"
+  "where-it-goes-style-v1": "neon",
+  "where-it-goes-import-rules-v1": JSON.stringify([{ merchantKey: "CAFE", category: "Food", updatedAt: 1 }])
 });
 let deviceCreates = 0;
 const personal = createPersonalStorage(storage, { deviceIdFactory: () => { deviceCreates += 1; return "device-a"; } });
@@ -26,12 +27,14 @@ assert.deepEqual(personal.guestSnapshot(), {
   expenses: [{ id: "guest", amount: 2 }],
   categories: [{ name: "Food", emoji: "🥑", color: "#eee" }],
   style: "neon",
+  importRules: [{ merchantKey: "CAFE", category: "Food", updatedAt: 1 }],
   localIsDefault: false
 });
 
-personal.saveAccountSnapshot("user-a", { rows: [{ id: "a-secret" }], categories: [], style: "pocket" });
+personal.saveAccountSnapshot("user-a", { rows: [{ id: "a-secret" }], categories: [], style: "pocket", importRules: [{ merchantKey: "BUS", category: "Transport", updatedAt: 2 }] });
 personal.saveAccountSnapshot("user-b", { rows: [{ id: "b-secret" }], categories: [], style: "swiss" });
 assert.equal(personal.accountSnapshot("user-a").rows[0].id, "a-secret");
+assert.equal(personal.accountSnapshot("user-a").importRules[0].merchantKey, "BUS");
 assert.equal(personal.accountSnapshot("user-b").rows[0].id, "b-secret");
 
 const firstId = personal.nextOperationId();
@@ -59,5 +62,5 @@ const corrupt = createPersonalStorage(memoryStorage({
   "where-it-goes-personal-cache-v2:user-c": "not json",
   "where-it-goes-personal-outbox-v2:user-c": "{}"
 }));
-assert.deepEqual(corrupt.accountSnapshot("user-c"), { rows: [], categories: null, style: null });
+assert.deepEqual(corrupt.accountSnapshot("user-c"), { rows: [], categories: null, style: null, importRules: [] });
 assert.deepEqual(corrupt.outbox("user-c"), []);

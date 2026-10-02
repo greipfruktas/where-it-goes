@@ -4,7 +4,9 @@ import {
   deletionToOperation,
   expenseToOperation,
   mergeExpenseRows,
-  normalizeLegacyExpenses
+  normalizeLegacyExpenses,
+  normalizeImportRules,
+  settingsToOperation
 } from "../src/personal-sync/domain.js";
 
 const legacy = [{
@@ -59,8 +61,8 @@ const offlineDelete = mergeExpenseRows(
 );
 assert.ok(offlineDelete[0].deletedAt);
 
-const defaultSettings = { categories: [{ name: "Food", emoji: "🥑", color: "#e6f0df" }], style: "pocket" };
-const customCloudSettings = { categories: [{ name: "Lunch", emoji: "🍜", color: "#eeeeee" }], style: "neon" };
+const defaultSettings = { categories: [{ name: "Food", emoji: "🥑", color: "#e6f0df" }], style: "pocket", importRules: [] };
+const customCloudSettings = { categories: [{ name: "Lunch", emoji: "🍜", color: "#eeeeee" }], style: "neon", importRules: [{ merchantKey: "CAFE", category: "Lunch", updatedAt: 2 }] };
 assert.deepEqual(
   chooseInitialSettings({ local: defaultSettings, cloud: customCloudSettings, localIsDefault: true }),
   { settings: customCloudSettings, upload: false }
@@ -92,4 +94,10 @@ assert.deepEqual(deletionToOperation("e1", "phone-a:4"), {
   operation_id: "phone-a:4",
   kind: "expense_delete",
   expense_id: "e1"
+});
+assert.deepEqual(normalizeImportRules(null), []);
+assert.deepEqual(normalizeImportRules({}), []);
+assert.deepEqual(normalizeImportRules([{ merchantKey: " CAFE ", category: "Food", updatedAt: 3 }, { merchantKey: "", category: "Food", updatedAt: 1 }]), [{ merchantKey: "CAFE", category: "Food", updatedAt: 3 }]);
+assert.deepEqual(settingsToOperation(defaultSettings, "phone-a:5"), {
+  operation_id: "phone-a:5", kind: "settings_replace", categories: defaultSettings.categories, style: "pocket", import_rules: []
 });

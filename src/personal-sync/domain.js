@@ -9,6 +9,24 @@ function clone(value) {
   return value == null ? value : structuredClone(value);
 }
 
+export function normalizeImportRules(value) {
+  return (Array.isArray(value) ? value : []).filter((rule) =>
+    typeof rule?.merchantKey === "string" && rule.merchantKey.trim()
+    && typeof rule.category === "string" && rule.category.trim()
+    && Number.isFinite(Number(rule.updatedAt))
+  ).map((rule) => ({ merchantKey: rule.merchantKey.trim(), category: rule.category.trim(), updatedAt: Number(rule.updatedAt) }));
+}
+
+export function settingsToOperation(settings, operationId) {
+  return {
+    operation_id: String(operationId),
+    kind: "settings_replace",
+    categories: clone(settings.categories),
+    style: settings.style,
+    import_rules: normalizeImportRules(settings.importRules)
+  };
+}
+
 function normalizeExpense(item, deviceId) {
   if (!item || typeof item !== "object") throw new Error("Expense must be an object");
   const amount = Number(item.amount);
@@ -98,6 +116,7 @@ export function mergeExpenseRows(localRows = [], cloudRows = []) {
 }
 
 export function chooseInitialSettings({ local, cloud }) {
-  if (cloud) return { settings: clone(cloud), upload: false };
-  return { settings: clone(local), upload: true };
+  const normalize = (settings) => settings ? { ...clone(settings), importRules: normalizeImportRules(settings.importRules) } : null;
+  if (cloud) return { settings: normalize(cloud), upload: false };
+  return { settings: normalize(local), upload: true };
 }

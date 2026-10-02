@@ -2,6 +2,7 @@ const KEYS = {
   expenses: "where-it-goes-expenses-v1",
   categories: "where-it-goes-groups-v1",
   style: "where-it-goes-style-v1",
+  importRules: "where-it-goes-import-rules-v1",
   device: "where-it-goes-device-id-v1",
   sequence: "where-it-goes-operation-sequence-v1"
 };
@@ -40,18 +41,20 @@ export function createPersonalStorage(storage, options = {}) {
       const expenses = readJSON(storage, KEYS.expenses, []);
       const categories = readJSON(storage, KEYS.categories, []);
       const style = storage.getItem(KEYS.style);
+      const importRules = readJSON(storage, KEYS.importRules, []);
       return {
         expenses: Array.isArray(expenses) ? expenses : [],
         categories: Array.isArray(categories) ? categories : [],
         style,
+        importRules: Array.isArray(importRules) ? importRules : [],
         localIsDefault: !storage.getItem(KEYS.expenses) && !storage.getItem(KEYS.categories) && !style
       };
     },
     accountSnapshot(userId) {
       const snapshot = readJSON(storage, cacheKey(userId), null);
       return snapshot && Array.isArray(snapshot.rows)
-        ? { rows: snapshot.rows, categories: snapshot.categories ?? null, style: snapshot.style ?? null }
-        : { rows: [], categories: null, style: null };
+        ? { rows: snapshot.rows, categories: snapshot.categories ?? null, style: snapshot.style ?? null, importRules: Array.isArray(snapshot.importRules) ? snapshot.importRules : [] }
+        : { rows: [], categories: null, style: null, importRules: [] };
     },
     saveAccountSnapshot(userId, snapshot) {
       storage.setItem(cacheKey(userId), JSON.stringify(snapshot));

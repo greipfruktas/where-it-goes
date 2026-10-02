@@ -22,10 +22,11 @@ export function createPersonalRepository(client) {
   return {
     async pull(userId) {
       const expensesResult = await client.from("personal_expenses").select("*").eq("owner_id", userId);
-      const settingsResult = await client.from("personal_settings").select("categories, style, updated_at").eq("owner_id", userId).maybeSingle();
+      const settingsResult = await client.from("personal_settings").select("categories, style, import_rules, updated_at").eq("owner_id", userId).maybeSingle();
+      const settings = unwrap(settingsResult, null);
       return {
         expenses: unwrap(expensesResult, []).map(expenseFromRow),
-        settings: unwrap(settingsResult, null)
+        settings: settings ? { categories: settings.categories, style: settings.style, importRules: Array.isArray(settings.import_rules) ? settings.import_rules : [] } : null
       };
     },
     async apply(operation) {

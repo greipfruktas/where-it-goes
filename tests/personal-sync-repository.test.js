@@ -5,7 +5,7 @@ const calls = [];
 const query = (table) => ({
   select(columns) { calls.push(["select", table, columns]); return this; },
   eq(column, value) { calls.push(["eq", table, column, value]); return table === "personal_expenses" ? Promise.resolve({ data: [{ expense_id: "e1", amount_minor: 1250, labels: [], reimbursement_percent: 0, expense_date: "2026-09-26", created_at_client: 1 }] }) : this; },
-  maybeSingle() { calls.push(["maybeSingle", table]); return Promise.resolve({ data: { categories: [], style: "pocket" } }); }
+  maybeSingle() { calls.push(["maybeSingle", table]); return Promise.resolve({ data: { categories: [], style: "pocket", import_rules: [{ merchantKey: "BUS", category: "Transport", updatedAt: 2 }] } }); }
 });
 const client = {
   from: query,
@@ -16,6 +16,8 @@ const client = {
 const repository = createPersonalRepository(client);
 const pulled = await repository.pull("user-a");
 assert.equal(pulled.expenses[0].amount, 12.5);
+assert.deepEqual(pulled.settings.importRules, [{ merchantKey: "BUS", category: "Transport", updatedAt: 2 }]);
+assert.ok(calls.some((call) => call[0] === "select" && call[1] === "personal_settings" && /import_rules/.test(call[2])));
 assert.ok(calls.some((call) => call[0] === "eq" && call[3] === "user-a"));
 assert.equal(await repository.apply({ operation_id: "phone:1", kind: "expense_delete", expense_id: "e1" }), true);
 assert.ok(calls.some((call) => call[0] === "rpc" && call[1] === "apply_personal_operation"));

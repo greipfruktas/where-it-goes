@@ -1,4 +1,4 @@
-import { chooseInitialSettings, deletionToOperation, expenseToOperation, mergeExpenseRows, normalizeLegacyExpenses } from "./domain.js";
+import { chooseInitialSettings, deletionToOperation, expenseToOperation, mergeExpenseRows, normalizeLegacyExpenses, settingsToOperation } from "./domain.js";
 
 export function createPersonalSyncController({ repository, storage, personalData, networkState = globalThis, documentState = globalThis.document }) {
   let user = null;
@@ -8,12 +8,7 @@ export function createPersonalSyncController({ repository, storage, personalData
   let inFlight = null;
   let retryTimer = null;
 
-  const settingsOperation = (settings) => ({
-    operation_id: storage.nextOperationId(),
-    kind: "settings_replace",
-    categories: settings.categories,
-    style: settings.style
-  });
+  const settingsOperation = (settings) => settingsToOperation(settings, storage.nextOperationId());
 
   function activeRows(snapshot) {
     return (snapshot.rows || []).filter((row) => !(row.deletedAt || row.deleted_at));
@@ -23,7 +18,8 @@ export function createPersonalSyncController({ repository, storage, personalData
     personalData.useNamespace(user.id, {
       expenses: activeRows(snapshot),
       categories: snapshot.categories,
-      style: snapshot.style
+      style: snapshot.style,
+      importRules: snapshot.importRules || []
     });
   }
 
@@ -45,12 +41,12 @@ export function createPersonalSyncController({ repository, storage, personalData
       const cached = storage.accountSnapshot(user.id);
       const rows = mergeExpenseRows(cached.rows, cloud.expenses);
       const chosen = chooseInitialSettings({
-        local: { categories: cached.categories || guest?.categories, style: cached.style || guest?.style || "pocket" },
-        cloud: cloud.settings ? { categories: cloud.settings.categories, style: cloud.settings.style } : null,
+        local: { categories: cached.categories || guest?.categories, style: cached.style || guest?.style || "pocket", importRules: cached.categories ? cached.importRules : (guest?.importRules || []) },
+        cloud: cloud.settings ? { categories: cloud.settings.categories, style: cloud.settings.style, importRules: cloud.settings.importRules } : null,
         localIsDefault: guest?.localIsDefault
       });
       if (chosen.upload && chosen.settings?.categories?.length) storage.enqueue(user.id, settingsOperation(chosen.settings));
-      const snapshot = { rows, categories: chosen.settings.categories, style: chosen.settings.style };
+      const snapshot = { rows, categories: chosen.settings.categories, style: chosen.settings.style, importRules: chosen.settings.importRules };
       storage.saveAccountSnapshot(user.id, snapshot);
       renderSnapshot(snapshot);
       return snapshot;
@@ -73,10 +69,11 @@ export function createPersonalSyncController({ repository, storage, personalData
       cached = {
         rows,
         categories: cached.categories || guest.categories,
-        style: cached.style || guest.style || "pocket"
+        style: cached.style || guest.style || "pocket",
+        importRules: cached.categories ? cached.importRules : (guest.importRules || [])
       };
       storage.saveAccountSnapshot(user.id, cached);
-      if (guest.categories?.length) storage.enqueue(user.id, settingsOperation({ categories: guest.categories, style: guest.style || "pocket" }));
+      if (guest.categories?.length) storage.enqueue(user.id, settingsOperation({ categories: guest.categories, style: guest.style || "pocket", importRules: guest.importRules || [] }));
       storage.markGuestImported(user.id);
     }
 
@@ -90,7 +87,7 @@ export function createPersonalSyncController({ repository, storage, personalData
       if (operation) {
         storage.enqueue(user.id, operation);
         const current = storage.accountSnapshot(user.id);
-        storage.saveAccountSnapshot(user.id, { rows: personalData.snapshot().expenses, categories: personalData.snapshot().categories, style: personalData.snapshot().style });
+        storage.saveAccountSnapshot(user.id, { rows: personalData.snapshot().expenses, categories: personalData.snapshot().categories, style: personalData.snapshot().style, importRules: personalData.snapshot().importRules || [] });
         schedule();
       }
     });
