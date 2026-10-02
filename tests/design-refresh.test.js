@@ -5,7 +5,7 @@ const html = fs.readFileSync(new URL("../index.html", import.meta.url), "utf8");
 const css = fs.readFileSync(new URL("../styles.css", import.meta.url), "utf8");
 const js = fs.readFileSync(new URL("../app.js", import.meta.url), "utf8");
 
-assert.match(html, /href="styles\.css\?v=30"/, "theme release should bypass stale installed-app CSS caches");
+assert.match(html, /href="styles\.css\?v=31"/, "theme release should bypass stale installed-app CSS caches");
 assert.match(css, /:root\s*\{[^}]*background:\s*transparent/s, "the root canvas must let the active body theme fill the top margin");
 assert.doesNotMatch(css, /:root\s*\{[^}]*background:\s*var\(--paper\)/s, "the root canvas must not stay locked to Style A");
 
@@ -78,3 +78,6 @@ assert.match(css, /@media \(max-width:\s*430px\)[\s\S]*?\.topbar\s*\{[^}]*grid-t
 assert.match(css, /@media \(max-width:\s*430px\)[\s\S]*?\.topbar-actions\s*\{[^}]*flex-wrap:\s*nowrap/s, "narrow header actions should stay beside the title");
 assert.match(css, /@media \(max-width:\s*430px\)[\s\S]*?\.style-menu\s*\{[^}]*position:\s*fixed[^}]*left:\s*12px[^}]*right:\s*12px/s, "the mobile style menu should stay inside the viewport");
 assert.match(js, /\.topbar"\)\.style\.display\s*=\s*view === "overview" \? "" : "none"/, "view changes must preserve responsive topbar display rules");
+assert.match(css, /\.reimbursement-field\s*\{[^}]*width:\s*100%[^}]*min-width:\s*0[^}]*padding:\s*0/s, "the reimbursement section should align with the other expense fields");
+assert.match(css, /\.reimbursement-choices\s*\{[^}]*grid-template-columns:\s*repeat\(4,\s*minmax\(0,\s*1fr\)\)/s, "reimbursement choices should shrink evenly on narrow screens");
+assert.match(css, /\.reimbursement-choices button\s*\{[^}]*width:\s*100%[^}]*min-width:\s*0/s, "reimbursement buttons should remain inside their grid cells");
