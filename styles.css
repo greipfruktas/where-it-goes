@@ -508,7 +508,11 @@ body[data-style="swiss"] .progress span { background: #11110f; }
 .import-range { display: grid; grid-template-columns: minmax(0,1fr) 20px minmax(0,1fr); gap: 7px; align-items: end; }
 .import-range > span { min-height: 44px; display: grid; place-items: center; color: var(--muted); }
 .import-range label { min-width: 0; display: grid; gap: 6px; color: var(--muted); font-size: 11px; font-weight: 800; }
-.import-range input, .import-row-editor input, .import-row-editor select { width: 100%; min-width: 0; min-height: 44px; padding: 9px; border: 1px solid var(--line); border-radius: 12px; background: var(--card); color: var(--ink); font: inherit; }
+.import-control { width: 100%; max-width: 100%; min-width: 0; height: 48px; padding: 0 12px; border: 1px solid var(--line); border-radius: 12px; background-color: var(--card); color: var(--ink); font-size: 16px; font-weight: 700; line-height: 1.2; }
+.import-control:focus { outline: 3px solid rgba(49,92,72,.18); border-color: var(--green); }
+.import-row-editor select.import-control { appearance: none; padding-right: 34px; background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%); background-position: calc(100% - 17px) 21px, calc(100% - 12px) 21px; background-size: 5px 5px, 5px 5px; background-repeat: no-repeat; }
+.import-control[type="date"] { appearance: none; }
+.import-control[type="date"]::-webkit-date-and-time-value { min-width: 0; text-align: left; }
 .import-summary { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 7px; }
 .import-summary span { min-width: 0; padding: 9px 5px; border: 1px solid var(--line); border-radius: 12px; background: var(--card-warm); color: var(--muted); display: grid; gap: 2px; font-size: 9px; font-weight: 800; text-align: center; }
 .import-summary b { color: var(--ink); font-size: 16px; }
@@ -542,6 +546,12 @@ body[data-style="swiss"] .progress span { background: #11110f; }
 body[data-style="neon"] .import-file-picker, body[data-style="neon"] .import-row, body[data-style="neon"] .import-summary span, body[data-style="neon"] .import-range input, body[data-style="neon"] .import-row-editor input, body[data-style="neon"] .import-row-editor select, body[data-style="neon"] .import-bulk-actions button, body[data-style="neon"] .import-labels span { background: rgba(29,33,29,.94); border-color: rgba(168,195,161,.16); color: var(--ink); }
 body[data-style="neon"] .import-actions { background: linear-gradient(transparent, #151714 22%); }
 body[data-style="swiss"] .import-row, body[data-style="swiss"] .import-file-picker, body[data-style="swiss"] .import-summary span, body[data-style="swiss"] .import-range input, body[data-style="swiss"] .import-row-editor input, body[data-style="swiss"] .import-row-editor select { border-radius: 8px; box-shadow: none; }
+@media (max-width: 699px) {
+  .import-backdrop { overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+  .import-sheet { position: relative; left: auto; bottom: auto; transform: none; width: 100%; min-height: 100dvh; max-height: none; overflow: visible; padding-top: max(10px, env(safe-area-inset-top)); border: 0; border-radius: 0; animation: none; }
+  .import-sheet .sheet-header { position: sticky; z-index: 3; top: 0; margin: 0 -6px 12px; padding: 7px 6px; background: color-mix(in srgb, var(--paper) 94%, transparent); backdrop-filter: blur(12px); }
+  .import-row { overflow-anchor: none; }
+}
 @media (max-width: 350px) {
   .import-sheet { padding-inline: 14px; }
   .import-row { padding: 10px; }

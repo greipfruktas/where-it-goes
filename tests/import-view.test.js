@@ -27,6 +27,9 @@ assert.match(root.innerHTML, /Duplicate/);
 assert.match(root.innerHTML, /Select all new/);
 assert.match(root.innerHTML, /Exclude all/);
 for (const control of ["data-row-date", "data-row-amount", "data-row-note", "data-row-category", "data-row-label", "data-row-reimbursement"]) assert.match(root.innerHTML, new RegExp(control));
+for (const control of ["data-row-date", "data-row-amount", "data-row-note", "data-row-category", "data-row-reimbursement"]) {
+  assert.match(root.innerHTML, new RegExp(`class="import-control"[^>]*${control}|${control}[^>]*class="import-control"`));
+}
 assert.match(root.innerHTML, /<input[^>]*min="0"[^>]*max="100"[^>]*data-row-reimbursement="swedbank:1"/);
 assert.match(root.innerHTML, /Cancel/);
 assert.match(root.innerHTML, /Save selected expenses/);

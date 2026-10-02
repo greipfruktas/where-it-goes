@@ -21,11 +21,11 @@ function rowMarkup(row, categories) {
       <div class="import-statuses">${row.duplicate ? '<span class="import-status">Duplicate</span>' : ""}${row.needsReview ? '<span class="import-status warning">Other</span>' : ""}</div>
     </div>
     <div class="import-row-editor">
-      <label><span>Date</span><input type="date" data-row-date="${escapeHTML(row.id)}" value="${escapeHTML(row.date)}" /></label>
-      <label><span>Amount</span><input type="number" inputmode="decimal" min="0.01" step="0.01" data-row-amount="${escapeHTML(row.id)}" value="${escapeHTML(row.amount)}" /></label>
-      <label class="import-wide"><span>Description</span><input type="text" maxlength="60" data-row-note="${escapeHTML(row.id)}" value="${escapeHTML(row.note)}" /></label>
-      <label><span>Category</span><select data-row-category="${escapeHTML(row.id)}">${categories.map(({ name, emoji }) => `<option value="${escapeHTML(name)}" ${name === row.category ? "selected" : ""}>${escapeHTML(emoji)} ${escapeHTML(name)}</option>`).join("")}</select></label>
-      <label><span>Coming back %</span><input type="number" inputmode="numeric" min="0" max="100" step="1" data-row-reimbursement="${escapeHTML(row.id)}" value="${escapeHTML(row.reimbursementPercent)}" /></label>
+      <label><span>Date</span><input class="import-control" type="date" data-row-date="${escapeHTML(row.id)}" value="${escapeHTML(row.date)}" /></label>
+      <label><span>Amount</span><input class="import-control" type="number" inputmode="decimal" min="0.01" step="0.01" data-row-amount="${escapeHTML(row.id)}" value="${escapeHTML(row.amount)}" /></label>
+      <label class="import-wide"><span>Description</span><input class="import-control" type="text" maxlength="60" data-row-note="${escapeHTML(row.id)}" value="${escapeHTML(row.note)}" /></label>
+      <label><span>Category</span><select class="import-control" data-row-category="${escapeHTML(row.id)}">${categories.map(({ name, emoji }) => `<option value="${escapeHTML(name)}" ${name === row.category ? "selected" : ""}>${escapeHTML(emoji)} ${escapeHTML(name)}</option>`).join("")}</select></label>
+      <label><span>Coming back %</span><input class="import-control" type="number" inputmode="numeric" min="0" max="100" step="1" data-row-reimbursement="${escapeHTML(row.id)}" value="${escapeHTML(row.reimbursementPercent)}" /></label>
       <fieldset class="import-wide"><legend>Labels</legend><div class="import-labels">${LABELS.map((label) => `<label><input type="checkbox" data-row-label="${escapeHTML(row.id)}" value="${label}" ${(row.labels || []).includes(label) ? "checked" : ""} /><span>${label}</span></label>`).join("")}</div></fieldset>
     </div>
     ${row.error ? `<p class="import-row-error" role="alert">${escapeHTML(row.error)}</p>` : ""}
@@ -41,7 +41,7 @@ export function renderImportSheet(root, state, categories = []) {
     <p class="import-privacy">Your statement stays on this device. Only expenses you save are added to Personal.</p>
     ${state?.error ? `<p class="import-error" role="alert">${escapeHTML(state.error)}</p>` : ""}
     ${state?.rows ? `<div class="import-review">
-      <div class="import-range"><label><span>From</span><input type="date" data-import-from value="${escapeHTML(state.from)}" /></label><span aria-hidden="true">→</span><label><span>To</span><input type="date" data-import-to value="${escapeHTML(state.to)}" /></label></div>
+      <div class="import-range"><label><span>From</span><input class="import-control" type="date" data-import-from value="${escapeHTML(state.from)}" /></label><span aria-hidden="true">→</span><label><span>To</span><input class="import-control" type="date" data-import-to value="${escapeHTML(state.to)}" /></label></div>
       <div class="import-summary">
         <span><b>${summary.outgoing}</b>Expenses found</span><span><b>${summary.incomingIgnored}</b>Incoming ignored</span><span><b>${summary.outsideRange}</b>Outside dates</span>
         <span><b>${summary.duplicatesExcluded}</b>Duplicates</span><span><b>${summary.other}</b>Needs category</span><span><b>${summary.unreadableRows}</b>Unreadable rows</span>

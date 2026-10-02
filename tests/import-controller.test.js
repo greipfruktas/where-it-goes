@@ -69,3 +69,22 @@ assert.equal(root.hidden, true);
 const broken = createImportController({ root, fileReader, XLSX: {}, personalData, notify: () => {}, parseWorkbook: () => { throw new Error("Required Swedbank headers were not found"); } });
 await assert.rejects(broken.chooseFile({ name: "bad.xlsx", size: 100 }), /headers/i);
 assert.equal(broken.getState().error, "Required Swedbank headers were not found");
+
+let sheet = null;
+const stableRoot = {
+  hidden: true,
+  _html: "",
+  addEventListener() {},
+  get innerHTML() { return this._html; },
+  set innerHTML(value) { this._html = value; sheet = value ? { scrollTop: 0 } : null; },
+  querySelector(selector) { return selector === ".import-sheet" ? sheet : null; }
+};
+const stableController = createImportController({
+  root: stableRoot, fileReader, XLSX: {}, personalData, notify: () => {},
+  parseWorkbook: () => parsed, createState: async () => structuredClone(review),
+  buildBatch: () => ({ expenses: [], learnedRules: [] })
+});
+await stableController.chooseFile({ name: "statement.xlsx", size: 100 });
+sheet.scrollTop = 412;
+stableController.updateRow("swedbank:1", { labels: ["Must"] });
+assert.equal(sheet.scrollTop, 412, "editing a row must preserve the import review scroll position");

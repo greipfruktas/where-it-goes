@@ -23,9 +23,14 @@ export function createImportController({
   let previousFocus = null;
 
   function render() {
+    const rootScrollTop = root.scrollTop || 0;
+    const sheetScrollTop = root.querySelector?.(".import-sheet")?.scrollTop || 0;
     const snapshot = personalData.snapshot();
     const visible = state?.rows ? { ...state, summary: reviewSummary(state) } : state;
     renderImportSheet(root, visible, snapshot.categories || []);
+    root.scrollTop = rootScrollTop;
+    const nextSheet = root.querySelector?.(".import-sheet");
+    if (nextSheet) nextSheet.scrollTop = sheetScrollTop;
   }
 
   function open() {
