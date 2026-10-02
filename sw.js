@@ -1,6 +1,6 @@
-const CACHE = "where-it-goes-v27";
+const CACHE = "where-it-goes-v28";
 const ASSETS = [
-  "./", "./index.html", "./privacy.html", "./styles.css", "./styles.css?v=27", "./app.js", "./manifest.webmanifest",
+  "./", "./index.html", "./privacy.html", "./styles.css", "./styles.css?v=28", "./app.js", "./manifest.webmanifest",
   "./icons/icon-192.png", "./icons/icon-512.png",
   "./src/groups/domain.js", "./src/groups/supabase.js", "./src/groups/repository.js",
   "./src/groups/view.js", "./src/groups/controller.js", "./supabase/config.js"

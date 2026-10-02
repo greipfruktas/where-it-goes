@@ -5,7 +5,7 @@ const html = fs.readFileSync(new URL("../index.html", import.meta.url), "utf8");
 const css = fs.readFileSync(new URL("../styles.css", import.meta.url), "utf8");
 const js = fs.readFileSync(new URL("../app.js", import.meta.url), "utf8");
 
-assert.match(html, /href="styles\.css\?v=27"/, "theme release should bypass stale installed-app CSS caches");
+assert.match(html, /href="styles\.css\?v=28"/, "theme release should bypass stale installed-app CSS caches");
 
 assert.match(html, /class="total-card pocket-ledger-card[^"]*"/, "monthly total card should opt into the Pocket Ledger treatment");
 assert.match(css, /--paper:\s*#f3ecdc/, "Pocket Ledger should use a warmer paper background");
@@ -22,6 +22,8 @@ assert.match(css, /body\[data-style="neon"\]\s*\{[^}]*--green:\s*#a8c3a1/s, "Mid
 assert.doesNotMatch(css, /#6cf4d2|#9b7cff|#ff5f9e|#702bff/i, "the neon accent palette should be removed");
 assert.match(css, /body\[data-style="neon"\] \.group-expense-form[\s\S]*?background:/, "shared expense forms should receive the dark surface treatment");
 assert.match(css, /body\[data-style="neon"\]\s*\{[^}]*color:\s*var\(--ink\)/s, "dark theme should explicitly apply its text color to the body");
+assert.match(css, /html\[data-style="neon"\]\s*\{[^}]*background:\s*#151714/s, "dark theme should cover the browser canvas above the app in split screen");
+assert.match(js, /document\.documentElement\.dataset\.style\s*=\s*selectedStyle/, "style changes should update the root canvas as well as the body");
 assert.match(css, /body\[data-style="neon"\] \.empty-state\s*\{[^}]*background:/s, "empty states should use a dark surface instead of the light theme card");
 assert.match(css, /body\[data-style="neon"\] \.toast\s*\{[^}]*color:\s*#151714/s, "dark-theme confirmation toast should remain readable");
 assert.match(css, /body\[data-style="swiss"\]/, "Option C should have a Minimal Swiss theme hook");

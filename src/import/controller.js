@@ -96,7 +96,7 @@ export function createImportController({
   }
 
   function selectAllNew() {
-    state = { ...state, rows: state.rows.map((row) => ({ ...row, selected: row.inRange && !row.duplicate })) };
+    state = { ...state, rows: state.rows.map((row) => ({ ...row, selected: row.inRange && !row.duplicate && !row.possibleDuplicate })) };
     render();
   }
 

@@ -35,7 +35,7 @@ assert.equal(initial.incomingIgnored, 1);
 assert.equal(initial.rows.filter(({ duplicate }) => duplicate).length, 1);
 assert.equal(initial.rows.find(({ duplicate }) => duplicate).selected, false);
 assert.equal(initial.rows.find(({ category }) => category === "Other").needsReview, true);
-assert.deepEqual(reviewSummary(initial), { outgoing: 4, incomingIgnored: 1, outsideRange: 0, duplicatesExcluded: 1, other: 1, unreadableRows: 2 });
+assert.deepEqual(reviewSummary(initial), { outgoing: 4, incomingIgnored: 1, outsideRange: 0, duplicatesExcluded: 1, possibleDuplicatesExcluded: 0, other: 1, unreadableRows: 2 });
 
 const narrowed = filterReviewRows(initial, "2026-09-04", "2026-09-03");
 assert.equal(reviewSummary(narrowed).outsideRange, 1, "reversed bounds should normalize");
@@ -64,3 +64,18 @@ const longMerchant = await createReviewState({
   categories, learnedRules: [], existingExpenses: [], digest
 });
 assert.equal(longMerchant.rows[0].note.length, 60, "default notes must satisfy Personal's edit limit");
+
+const possible = await createReviewState({
+  transactions: [
+    { date: "2026-09-06", signedAmount: -14.2, merchant: "CAFE ONE", description: "Card payment", sourceRow: 1 },
+    { date: "2026-09-06", signedAmount: -14.2, merchant: "CAFE TWO", description: "Card payment", sourceRow: 2 },
+    { date: "2026-09-07", signedAmount: -14.2, merchant: "CAFE THREE", description: "Card payment", sourceRow: 3 }
+  ],
+  categories, learnedRules: [],
+  existingExpenses: [{ id: "manual-1", date: "2026-09-06", amount: 14.2, category: "Food", note: "Lunch", labels: [], reimbursementPercent: 0, createdAt: 1 }],
+  digest
+});
+assert.equal(possible.rows.filter(({ possibleDuplicate }) => possibleDuplicate).length, 1, "one manual expense should match only one imported row");
+assert.equal(possible.rows.find(({ possibleDuplicate }) => possibleDuplicate).selected, false);
+assert.equal(possible.rows.find(({ date }) => date === "2026-09-07").possibleDuplicate, false);
+assert.equal(reviewSummary(possible).possibleDuplicatesExcluded, 1);

@@ -254,6 +254,7 @@ function categoryFor(name) {
 function applyAppStyle(style, save = true) {
   selectedStyle = styleOptions[style] ? style : "pocket";
   document.body.dataset.style = selectedStyle;
+  if (document.documentElement) document.documentElement.dataset.style = selectedStyle;
   document.querySelector('meta[name="theme-color"]')?.setAttribute("content", styleOptions[selectedStyle].themeColor);
   $("#styleButtonLabel").textContent = styleOptions[selectedStyle].label;
   document.querySelectorAll("[data-style-option]").forEach((button) => {

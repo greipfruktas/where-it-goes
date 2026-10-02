@@ -8,7 +8,7 @@ let commits = 0;
 const fileReader = async () => { reads += 1; return new ArrayBuffer(1); };
 const parsed = { transactions: [{ date: "2026-09-01", signedAmount: -5, merchant: "Market", description: "Food", sourceRow: 2 }], unreadableRows: 0 };
 const review = {
-  rows: [{ id: "swedbank:1", date: "2026-09-01", amount: 5, merchant: "Market", merchantKey: "MARKET", description: "Food", note: "Market", category: "Food", labels: [], reimbursementPercent: 0, duplicate: false, selected: true, needsReview: false, inRange: true }],
+  rows: [{ id: "swedbank:1", date: "2026-09-01", amount: 5, merchant: "Market", merchantKey: "MARKET", description: "Food", note: "Market", category: "Food", labels: [], reimbursementPercent: 0, duplicate: false, possibleDuplicate: false, selected: true, needsReview: false, inRange: true }],
   from: "2026-09-01", to: "2026-09-01", categories: [{ name: "Food", emoji: "🥑" }, { name: "Other", emoji: "✨" }], learnedRules: [], pendingRules: [], incomingIgnored: 0, unreadableRows: 0
 };
 const personalData = {

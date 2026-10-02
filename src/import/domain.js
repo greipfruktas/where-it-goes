@@ -23,9 +23,20 @@ export async function createReviewState({ transactions = [], unreadableRows = 0,
   if (!outgoing.length) throw new Error("No outgoing expenses were found");
   const identified = await assignImportIds(outgoing, digest);
   const existingIds = new Set(existingExpenses.map(({ id }) => id));
+  const manualMatchCounts = new Map();
+  for (const expense of existingExpenses) {
+    if (String(expense?.id || "").startsWith("swedbank:")) continue;
+    const amountMinor = Math.round(Math.abs(Number(expense?.amount)) * 100);
+    if (!expense?.date || !Number.isFinite(amountMinor)) continue;
+    const key = `${expense.date}|${amountMinor}`;
+    manualMatchCounts.set(key, (manualMatchCounts.get(key) || 0) + 1);
+  }
   const rows = identified.map((transaction) => {
     const category = categorizeTransaction(transaction, categories, learnedRules);
     const duplicate = existingIds.has(transaction.importId);
+    const possibleKey = `${transaction.date}|${Math.round(Math.abs(Number(transaction.signedAmount)) * 100)}`;
+    const possibleDuplicate = !duplicate && (manualMatchCounts.get(possibleKey) || 0) > 0;
+    if (possibleDuplicate) manualMatchCounts.set(possibleKey, manualMatchCounts.get(possibleKey) - 1);
     return {
       id: transaction.importId,
       date: transaction.date,
@@ -39,7 +50,8 @@ export async function createReviewState({ transactions = [], unreadableRows = 0,
       reimbursementPercent: 0,
       sourceRow: transaction.sourceRow,
       duplicate,
-      selected: !duplicate,
+      possibleDuplicate,
+      selected: !duplicate && !possibleDuplicate,
       needsReview: category.category === "Other",
       inRange: true
     };
@@ -77,6 +89,7 @@ export function reviewSummary(state) {
     incomingIgnored: state.incomingIgnored,
     outsideRange: state.rows.filter(({ inRange }) => !inRange).length,
     duplicatesExcluded: state.rows.filter(({ duplicate, selected }) => duplicate && !selected).length,
+    possibleDuplicatesExcluded: state.rows.filter(({ possibleDuplicate, selected }) => possibleDuplicate && !selected).length,
     other: state.rows.filter(({ category, inRange }) => category === "Other" && inRange).length,
     unreadableRows: state.unreadableRows
   };

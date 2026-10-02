@@ -378,6 +378,8 @@ body[data-style="neon"] {
   --gold: #c9ac72;
   --shadow: 0 20px 50px rgba(0,0,0,.3);
 }
+html[data-style="neon"] { background: #151714; }
+html[data-style="swiss"] { background: #f7f7f2; }
 body[data-style="neon"] {
   color: var(--ink);
   background:
@@ -531,6 +533,7 @@ body[data-style="swiss"] .progress span { background: #11110f; }
 .import-row-title small { color: var(--muted); }
 .import-statuses { display: grid; gap: 4px; justify-items: end; }
 .import-status { padding: 4px 6px; border-radius: 999px; background: var(--paper-deep); color: var(--muted); font-size: 8px; font-weight: 900; text-transform: uppercase; }
+.import-status.possible { background: color-mix(in srgb, var(--gold) 22%, transparent); color: var(--gold); }
 .import-status.warning { background: var(--gold); color: #302717; }
 .import-row-editor { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 9px; }
 .import-row-editor > label { min-width: 0; display: grid; gap: 5px; color: var(--muted); font-size: 10px; font-weight: 800; }

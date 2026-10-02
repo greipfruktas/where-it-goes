@@ -18,7 +18,7 @@ function rowMarkup(row, categories) {
       <label class="import-check"><input type="checkbox" data-row-selected="${escapeHTML(row.id)}" ${row.selected ? "checked" : ""} ${row.inRange ? "" : "disabled"} /><span>Include</span></label>
       <span class="category-icon">${escapeHTML(active.emoji)}</span>
       <div class="import-row-title"><strong>${escapeHTML(row.merchant || row.description || "Expense")}</strong><small>${escapeHTML(row.date)} · €${Number(row.amount).toFixed(2)}</small></div>
-      <div class="import-statuses">${row.duplicate ? '<span class="import-status">Duplicate</span>' : ""}${row.needsReview ? '<span class="import-status warning">Other</span>' : ""}</div>
+      <div class="import-statuses">${row.duplicate ? '<span class="import-status">Duplicate</span>' : ""}${row.possibleDuplicate ? '<span class="import-status possible">Possible duplicate</span>' : ""}${row.needsReview ? '<span class="import-status warning">Other</span>' : ""}</div>
     </div>
     <div class="import-row-editor">
       <label><span>Date</span><input class="import-control" type="date" data-row-date="${escapeHTML(row.id)}" value="${escapeHTML(row.date)}" /></label>
@@ -44,7 +44,7 @@ export function renderImportSheet(root, state, categories = []) {
       <div class="import-range"><label><span>From</span><input class="import-control" type="date" data-import-from value="${escapeHTML(state.from)}" /></label><span aria-hidden="true">→</span><label><span>To</span><input class="import-control" type="date" data-import-to value="${escapeHTML(state.to)}" /></label></div>
       <div class="import-summary">
         <span><b>${summary.outgoing}</b>Expenses found</span><span><b>${summary.incomingIgnored}</b>Incoming ignored</span><span><b>${summary.outsideRange}</b>Outside dates</span>
-        <span><b>${summary.duplicatesExcluded}</b>Duplicates</span><span><b>${summary.other}</b>Needs category</span><span><b>${summary.unreadableRows}</b>Unreadable rows</span>
+        <span><b>${summary.duplicatesExcluded}</b>Duplicates</span><span><b>${summary.possibleDuplicatesExcluded}</b>Possible duplicates</span><span><b>${summary.other}</b>Needs category</span><span><b>${summary.unreadableRows}</b>Unreadable rows</span>
       </div>
       <div class="import-bulk-actions"><button type="button" data-import-select-new>Select all new</button><button type="button" data-import-exclude-all>Exclude all</button></div>
       <div class="import-rows">${state.rows.map((row) => rowMarkup(row, categories)).join("")}</div>
