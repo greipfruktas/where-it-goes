@@ -13,6 +13,41 @@ function eventTargetStub() {
   };
 }
 
+function modeRootStub() {
+  const buttons = ["personal", "groups"].map((appMode) => ({ dataset: { appMode }, classList: { toggle(_name, active) { this.selected = active; } } }));
+  return { addEventListener() {}, querySelectorAll: () => buttons, buttons };
+}
+
+{
+  const root = rootStub();
+  const personalRoot = { hidden: false };
+  const modeRoot = modeRootStub();
+  const controller = createGroupsController({
+    root, personalRoot, modeRoot, navigatorState: { onLine: true },
+    locationState: { search: "", pathname: "/where-it-goes/" },
+    auth: { consumeAuthReturn: async () => "", getSession: async () => ({ user: { id: "u1" } }) },
+    repository: { listGroups: async () => [] }
+  });
+  await controller.start();
+  assert.equal(root.hidden, true, "a normal signed-in launch should stay on Personal");
+  assert.equal(personalRoot.hidden, false);
+  assert.equal(modeRoot.buttons.find(({ dataset }) => dataset.appMode === "personal").classList.selected, true);
+}
+
+{
+  const root = rootStub();
+  const personalRoot = { hidden: false };
+  const controller = createGroupsController({
+    root, personalRoot, navigatorState: { onLine: true },
+    locationState: { search: "?destination=groups", pathname: "/where-it-goes/" },
+    auth: { consumeAuthReturn: async () => "", getSession: async () => ({ user: { id: "u1" } }) },
+    repository: { listGroups: async () => [] }
+  });
+  await controller.start();
+  assert.equal(root.hidden, false, "an explicit Groups sign-in return should reopen Groups");
+  assert.equal(personalRoot.hidden, true);
+}
+
 {
   const calls = [];
   const root = rootStub();

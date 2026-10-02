@@ -411,6 +411,7 @@ body[data-style="neon"] .date-display { background: rgba(29,33,29,.94); border-c
 body[data-style="neon"] .period-switch button.selected { background: rgba(168,195,161,.14); color: var(--green); }
 body[data-style="neon"] .sheet { background: linear-gradient(180deg, #242a24, #151714); }
 body[data-style="neon"] .empty-state { background: rgba(29,33,29,.72); border-color: rgba(168,195,161,.16); }
+body[data-style="neon"] .privacy-card { background: rgba(29,33,29,.94); border-color: rgba(168,195,161,.16); }
 body[data-style="neon"] .toast { background: #f1eee6; color: #151714; }
 body[data-style="neon"] .group-expense-form,
 body[data-style="neon"] .group-repayment-form,
@@ -480,14 +481,23 @@ body[data-style="swiss"] .date-display { border-radius: 8px; background: rgba(25
 body[data-style="swiss"] .period-switch button { border-radius: 6px; }
 body[data-style="swiss"] .category-icon { border-radius: 6px; }
 body[data-style="swiss"] .sheet { border-radius: 12px 12px 0 0; background: var(--paper); }
+body[data-style="swiss"] .privacy-card { border-radius: 8px; background: rgba(255,255,255,.92); box-shadow: none; }
 body[data-style="swiss"] .save-button,
 body[data-style="swiss"] .style-button b { border-radius: 6px; background: #11110f; color: white; box-shadow: none; }
 body[data-style="swiss"] .add-button { border-color: var(--paper); border-radius: 10px; background: var(--coral); box-shadow: none; }
 body[data-style="swiss"] .progress span { background: #11110f; }
 @media (min-width: 700px) { .sheet { bottom: 24px; border-radius: 29px; } }
 @media (max-width: 430px) {
-  .topbar { display: grid; grid-template-columns: 1fr; align-items: start; }
-  .topbar-actions { flex-wrap: wrap; justify-content: flex-start; }
+  .app-shell { padding-inline: 10px; }
+  .topbar { display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: center; gap: 8px; }
+  .topbar > div:first-child { min-width: 0; }
+  .topbar h1 { font-size: 19px; white-space: nowrap; }
+  .topbar .eyebrow { font-size: 8px; }
+  .topbar-actions { flex-wrap: nowrap; justify-content: flex-end; gap: 4px; }
+  .topbar .account-button { min-width: 42px; height: 38px; padding-inline: 7px; font-size: 10px; }
+  .topbar .style-button { min-width: 66px; height: 38px; padding-inline: 8px; gap: 4px; }
+  .topbar .icon-button { width: 36px; height: 36px; }
+  .style-menu { position: fixed; top: max(116px, calc(env(safe-area-inset-top) + 106px)); left: 12px; right: 12px; width: auto; max-height: calc(100dvh - 128px); overflow-y: auto; }
   .groups-root { padding-inline: 14px; }
   .group-create-form, .group-expense-form, .group-repayment-form { padding: 17px; }
   .group-date-row { grid-template-columns: 1fr; }

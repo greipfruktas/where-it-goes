@@ -5,7 +5,7 @@ const html = fs.readFileSync(new URL("../index.html", import.meta.url), "utf8");
 const css = fs.readFileSync(new URL("../styles.css", import.meta.url), "utf8");
 const js = fs.readFileSync(new URL("../app.js", import.meta.url), "utf8");
 
-assert.match(html, /href="styles\.css\?v=29"/, "theme release should bypass stale installed-app CSS caches");
+assert.match(html, /href="styles\.css\?v=30"/, "theme release should bypass stale installed-app CSS caches");
 assert.match(css, /:root\s*\{[^}]*background:\s*transparent/s, "the root canvas must let the active body theme fill the top margin");
 assert.doesNotMatch(css, /:root\s*\{[^}]*background:\s*var\(--paper\)/s, "the root canvas must not stay locked to Style A");
 
@@ -74,5 +74,7 @@ assert.match(css, /body\[data-style="neon"\] \.money-wheel-card \{[^}]*backgroun
 assert.match(css, /body\[data-style="swiss"\] \.money-wheel-card \{[^}]*background:\s*transparent/s, "swiss style should not repaint the money wheel card behind the transparent center");
 assert.match(js, /rangeStartInput"\)\.addEventListener\("input", updateRangeStart\)/, "from-date changes should update immediately on mobile input events");
 assert.match(js, /rangeEndInput"\)\.addEventListener\("input", updateRangeEnd\)/, "to-date changes should update immediately on mobile input events");
-assert.match(css, /@media \(max-width:\s*430px\)[\s\S]*?\.topbar\s*\{[^}]*grid-template-columns:\s*1fr/s, "narrow headers should stack actions without horizontal overflow");
-assert.match(css, /@media \(max-width:\s*430px\)[\s\S]*?\.topbar-actions\s*\{[^}]*flex-wrap:\s*wrap/s, "narrow header actions should wrap");
+assert.match(css, /@media \(max-width:\s*430px\)[\s\S]*?\.topbar\s*\{[^}]*grid-template-columns:\s*minmax\(0,1fr\)\s+auto/s, "narrow Personal headers should keep title and actions on one row");
+assert.match(css, /@media \(max-width:\s*430px\)[\s\S]*?\.topbar-actions\s*\{[^}]*flex-wrap:\s*nowrap/s, "narrow header actions should stay beside the title");
+assert.match(css, /@media \(max-width:\s*430px\)[\s\S]*?\.style-menu\s*\{[^}]*position:\s*fixed[^}]*left:\s*12px[^}]*right:\s*12px/s, "the mobile style menu should stay inside the viewport");
+assert.match(js, /\.topbar"\)\.style\.display\s*=\s*view === "overview" \? "" : "none"/, "view changes must preserve responsive topbar display rules");

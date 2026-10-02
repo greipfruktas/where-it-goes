@@ -262,10 +262,8 @@ function applyAppStyle(style, save = true) {
     button.classList.toggle("selected", active);
     button.setAttribute("aria-pressed", String(active));
   });
-  if (save) {
-    if (activePersonalNamespace === "guest") localStorage.setItem(STYLE_KEY, selectedStyle);
-    else persistAccountSnapshot();
-  }
+  localStorage.setItem(STYLE_KEY, selectedStyle);
+  if (save && activePersonalNamespace !== "guest") persistAccountSnapshot();
 }
 
 function renameCategory(state, oldName, nextCategory) {
@@ -598,7 +596,7 @@ function toggleStyleMenu(forceOpen = null) {
 function switchView(view) {
   document.querySelectorAll(".view").forEach((element) => element.classList.toggle("active", element.id === `${view}View`));
   document.querySelectorAll(".nav-item").forEach((button) => button.classList.toggle("active", button.dataset.view === view));
-  $(".topbar").style.display = view === "overview" ? "flex" : "none";
+  $(".topbar").style.display = view === "overview" ? "" : "none";
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 

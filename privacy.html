@@ -5,9 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#f3ecdc" />
     <title>Privacy · Where It Goes</title>
-    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="styles.css?v=30" />
   </head>
   <body>
+    <script>
+      (() => {
+        const style = ["pocket", "neon", "swiss"].includes(localStorage.getItem("where-it-goes-style-v1")) ? localStorage.getItem("where-it-goes-style-v1") : "pocket";
+        document.documentElement.dataset.style = style;
+        document.body.dataset.style = style;
+        document.querySelector('meta[name="theme-color"]')?.setAttribute("content", style === "neon" ? "#151714" : style === "swiss" ? "#f7f7f2" : "#f3ecdc");
+      })();
+    </script>
     <main class="privacy-shell">
       <a class="privacy-back" href="index.html" aria-label="Back to Where It Goes">← Back to the app</a>
       <article class="privacy-card">

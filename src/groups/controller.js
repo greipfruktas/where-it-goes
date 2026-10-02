@@ -309,13 +309,20 @@ export function createGroupsController({ repository, auth, root, navigatorState 
       setMode("groups");
       return acceptInvite(token);
     }
-    return showGroups();
+    const restoredParams = new URLSearchParams(String(restored || "").replace(/^.*\?/, ""));
+    const currentParams = new URLSearchParams(locationState?.search || "");
+    if ((restoredParams.get("destination") || currentParams.get("destination")) === "groups") return showGroups();
+    return showPersonal();
   }
 
   root.addEventListener?.("click", async (event) => {
     const target = event.target.closest?.("button, [data-group-id]");
     if (!target) return;
-    if (target.matches("[data-google-signin]")) return auth.signIn?.(`${locationState?.pathname || "/"}${locationState?.search || ""}`);
+    if (target.matches("[data-google-signin]")) {
+      const params = new URLSearchParams(locationState?.search || "");
+      params.set("destination", "groups");
+      return auth.signIn?.(`${locationState?.pathname || "/"}?${params}`);
+    }
     if (target.matches("[data-sign-out]")) { await auth.signOut?.(); return loadGroups(); }
     if (target.matches("[data-show-personal]")) return showPersonal();
     if (target.matches("[data-groups-back], [data-groups-retry]")) return loadGroups();
