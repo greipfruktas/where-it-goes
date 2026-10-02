@@ -45,6 +45,9 @@
               <button type="button" data-export-format="json">Backup file <span>.json</span></button>
             </div>
           </div>
+          <button class="icon-button" id="importButton" type="button" aria-label="Import Swedbank statement" title="Import statement">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11m0 0 4-4m-4 4-4-4M5 17v3h14v-3" /></svg>
+          </button>
         </div>
       </header>
 
@@ -221,9 +224,13 @@
       </section>
     </div>
 
+    <div id="importSheet" class="sheet-backdrop import-backdrop" hidden></div>
+
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    <script src="vendor/xlsx.full.min.js"></script>
     <script src="app.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script type="module" src="src/groups/controller.js"></script>
+    <script type="module" src="src/import/controller.js"></script>
   </body>
 </html>
