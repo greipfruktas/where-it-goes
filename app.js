@@ -519,9 +519,13 @@ function saveGroups() {
 function updateChoices() {
   document.querySelectorAll("[data-category]").forEach((button) => button.classList.toggle("selected", button.dataset.category === selectedCategory));
   document.querySelectorAll("[data-label]").forEach((button) => button.classList.toggle("selected", selectedLabels.includes(button.dataset.label)));
-  const preset = [0, 50, 100].includes(selectedReimbursementPercent) ? String(selectedReimbursementPercent) : "custom";
+  const enabled = selectedReimbursementPercent > 0;
+  const preset = [50, 100].includes(selectedReimbursementPercent) ? String(selectedReimbursementPercent) : "custom";
+  $("#reimbursementToggle").classList.toggle("selected", enabled);
+  $("#reimbursementToggle").setAttribute("aria-checked", String(enabled));
+  $("#reimbursementDetails").hidden = !enabled;
   document.querySelectorAll("[data-reimbursement]").forEach((button) => button.classList.toggle("selected", button.dataset.reimbursement === preset));
-  $("#customReimbursementField").hidden = preset !== "custom";
+  $("#customReimbursementField").hidden = !enabled || preset !== "custom";
   updateReimbursementPreview();
 }
 
@@ -626,6 +630,11 @@ $("#labelChoices").addEventListener("click", (event) => {
   const button = event.target.closest("[data-label]");
   if (!button) return;
   selectedLabels = selectedLabels.includes(button.dataset.label) ? selectedLabels.filter((label) => label !== button.dataset.label) : [...selectedLabels, button.dataset.label];
+  updateChoices();
+});
+$("#reimbursementToggle").addEventListener("click", () => {
+  const enabled = selectedReimbursementPercent > 0;
+  selectedReimbursementPercent = enabled ? 0 : 50;
   updateChoices();
 });
 $("#reimbursementChoices").addEventListener("click", (event) => {

@@ -10,7 +10,7 @@
     <title>Where It Goes</title>
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="apple-touch-icon" href="icons/icon-180.png" />
-    <link rel="stylesheet" href="styles.css?v=31" />
+    <link rel="stylesheet" href="styles.css?v=32" />
   </head>
   <body>
     <div id="appModeSwitch" class="app-mode-switch" role="group" aria-label="Choose expense mode">
@@ -174,20 +174,25 @@
             <div id="labelChoices" class="label-choices"></div>
           </fieldset>
 
-          <fieldset class="reimbursement-field">
-            <legend>Money coming back <span>optional</span></legend>
-            <div class="reimbursement-choices" id="reimbursementChoices">
-              <button type="button" data-reimbursement="0" class="selected">None</button>
-              <button type="button" data-reimbursement="50">50%</button>
-              <button type="button" data-reimbursement="100">All</button>
-              <button type="button" data-reimbursement="custom">Custom</button>
+          <section class="reimbursement-field" aria-labelledby="reimbursementLabel">
+            <div class="reimbursement-toggle-row">
+              <div><strong id="reimbursementLabel">Someone will repay me</strong><span>optional</span></div>
+              <button id="reimbursementToggle" class="reimbursement-toggle" type="button" role="switch" aria-checked="false" aria-labelledby="reimbursementLabel"><span aria-hidden="true"></span></button>
             </div>
-            <label id="customReimbursementField" class="custom-reimbursement" hidden>
-              <span>Percentage coming back</span>
-              <span class="percent-input"><input id="customReimbursementInput" type="number" min="1" max="100" inputmode="numeric" value="25" /><b>%</b></span>
-            </label>
-            <p id="reimbursementPreview" class="reimbursement-preview" hidden></p>
-          </fieldset>
+            <div id="reimbursementDetails" class="reimbursement-details" hidden>
+              <p>How much will come back?</p>
+              <div class="reimbursement-choices" id="reimbursementChoices">
+                <button type="button" data-reimbursement="50">50%</button>
+                <button type="button" data-reimbursement="100">All</button>
+                <button type="button" data-reimbursement="custom">Custom</button>
+              </div>
+              <label id="customReimbursementField" class="custom-reimbursement" hidden>
+                <span>Percentage coming back</span>
+                <span class="percent-input"><input id="customReimbursementInput" type="number" min="1" max="100" inputmode="numeric" value="25" /><b>%</b></span>
+              </label>
+              <p id="reimbursementPreview" class="reimbursement-preview" hidden></p>
+            </div>
+          </section>
 
           <div class="form-row">
             <label>
